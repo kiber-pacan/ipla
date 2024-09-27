@@ -1,0 +1,60 @@
+pluginManagement {
+    repositories {
+        maven { url "https://maven.fabricmc.net/" }
+        maven { url "https://maven.architectury.dev/" }
+        maven { url "https://files.minecraftforge.net/maven/" }
+        gradlePluginPortal()
+    }
+}
+
+rootProject.name = 'ipla'
+
+// Create build.properties file for preprocessor
+def writeBuildGradlePredefine(List<String> mc_versions, int version) {
+    StringBuilder sb = new StringBuilder()
+    for (int i = 0; i < mc_versions.size(); i++)
+    {
+        String verStr = mc_versions[i].replace(".", "_")
+        sb.append("V" + verStr + "=" + i.toString() + "\n")
+
+        if (version == i)
+            sb.append("MC_VER=" + i.toString() + "\n")
+    }
+
+    new File(rootDir, "build.properties").text = sb.toString()
+}
+
+// Get minecraft version index
+int version
+if (hasProperty("index")) {
+    version = Integer.valueOf(index)
+} else {
+    version = 0
+}
+
+print("version: ${version}")
+
+def mc_versions = [
+        "1.19.4", // 0
+        "1.20.1", // 1
+        "1.20.4", // 2
+        "1.21"    // 3
+]
+writeBuildGradlePredefine(mc_versions, version)
+
+// Loading properties
+def props = new Properties()
+props.load(new FileInputStream("${rootDir}/versions/${mc_versions.get(version)}.properties"))
+
+props.each { prop ->
+    //if (prop.key != null && prop.value != null)
+    gradle.ext.set(prop.key, prop.value)
+}
+
+// Including platforms
+include "common"
+
+def platforms = props.enabled_platforms.split(",")
+for (platform in platforms) {
+    include platform
+}
