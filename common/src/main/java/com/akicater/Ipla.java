@@ -5,6 +5,7 @@ import com.akicater.blocks.LayingItemEntity;
 import com.akicater.network.ItemPlacePayload;
 import com.google.common.base.Suppliers;
 import com.mojang.blaze3d.platform.InputConstants;
+import com.mojang.datafixers.util.Pair;
 import dev.architectury.event.events.client.ClientTickEvent;
 import dev.architectury.networking.NetworkManager;
 import dev.architectury.registry.registries.Registrar;
@@ -27,6 +28,7 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CubeVoxelShape;
 import net.minecraft.world.phys.shapes.Shapes;
@@ -129,54 +131,7 @@ public final class Ipla {
                 && z <= box.maxZ;
     }
 
-    public static int getIndexFromHit(BlockHitResult hit, boolean empty) {
-        BlockPos blockPos = hit.getBlockPos();
-        Vec3 pos = hit.getLocation();
-
-        float x = (float) Math.abs(pos.x - blockPos.getX());
-        float y = (float) Math.abs(pos.y - blockPos.getY());
-        float z = (float) Math.abs(pos.z - blockPos.getZ());
-
-        if (empty) {
-            int slot = hit.getDirection().get3DDataValue();
-            switch (hit.getDirection().get3DDataValue()) {
-                case 0, 1 -> {
-                    return getIndexFromXY(x, z) + slot * 4;
-                }
-                case 2, 3 -> {
-                    return getIndexFromXY(x, y) + slot * 4;
-                }
-                case 4, 5 -> {
-                    return getIndexFromXY(z, y) + slot * 4;
-                }
-            }
-        } else {
-            int slot = 0;
-            for (int i = 0; i < boxes.size(); i++) {
-                if (contains(x, y, z, boxes.get(i))) {
-                    slot = i;
-                }
-            }
-            switch (slot) {
-                case 0, 1 -> {
-                    return getIndexFromXY(x, z) + slot * 4;
-                }
-                case 2, 3 -> {
-                    return getIndexFromXY(x, y) + slot * 4;
-                }
-                case 4, 5 -> {
-                    return getIndexFromXY(z, y) + slot * 4;
-                }
-            }
-        }
-        return 0;
-    }
-
-    private static int getIndexFromXY(float a, float b) {
-        return ((a > 0.5f) ? 1 : 0) + ((b > 0.5f) ? 2 : 0);
-    }
-
-    public static int getIndexForDropping(BlockHitResult hit, LayingItemEntity entity) {
+    public static Pair<Integer, Integer> getIndexFromHit(BlockHitResult hit, boolean empty) {
         BlockPos blockPos = hit.getBlockPos();
         Vec3 pos = hit.getLocation();
 
@@ -185,26 +140,31 @@ public final class Ipla {
         float z = (float) Math.abs(pos.z - blockPos.getZ());
 
         int slot = 0;
-
-        for (int i = 0; i < boxes.size(); i++) {
-            if (contains(x, y, z, boxes.get(i))) {
-                slot = i;
-            }
-        }
-
-        if (entity.quad.get(slot)) {
-            switch (slot) {
-                case 0, 1 -> {
-                    return getIndexFromXY(x, z) + slot * 4;
-                }
-                case 2, 3 -> {
-                    return getIndexFromXY(x, y) + slot * 4;
-                }
-                case 4, 5 -> {
-                    return getIndexFromXY(z, y) + slot * 4;
+        if (empty) {
+            slot = hit.getDirection().get3DDataValue();
+        } else {
+            for (int i = 0; i < boxes.size(); i++) {
+                if (contains(x, y, z, boxes.get(i))) {
+                    slot = i;
                 }
             }
         }
-        return slot * 4;
+
+        switch (slot) {
+            case 0, 1 -> {
+                return new Pair<>(slot, getIndexFromXY(x, z));
+            }
+            case 2, 3 -> {
+                return new Pair<>(slot, getIndexFromXY(x, y));
+            }
+            case 4, 5 -> {
+                return new Pair<>(slot, getIndexFromXY(z, y));
+            }
+        }
+        return new Pair<>(0,0);
+    }
+
+    private static int getIndexFromXY(float a, float b) {
+        return ((a > 0.5f) ? 1 : 0) + ((b > 0.5f) ? 2 : 0);
     }
 }
