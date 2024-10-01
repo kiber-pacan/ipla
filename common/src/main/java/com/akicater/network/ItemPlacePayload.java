@@ -2,6 +2,7 @@ package com.akicater.network;
 
 import com.akicater.Ipla;
 import com.akicater.blocks.LayingItemEntity;
+import com.mojang.datafixers.util.Pair;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -40,6 +41,7 @@ public record ItemPlacePayload(BlockPos pos, BlockHitResult hitResult) implement
         }
 
         Block replBlock = level.getBlockState(tempPos).getBlock();
+        int i = hitResult.getDirection().get3DDataValue();
 
         if (replBlock == Blocks.AIR || replBlock == Blocks.WATER) {
             BlockState state = Ipla.lItemBlock.get().defaultBlockState();
@@ -52,10 +54,10 @@ public record ItemPlacePayload(BlockPos pos, BlockHitResult hitResult) implement
             LayingItemEntity entity = (LayingItemEntity)level.getBlockEntity(tempPos);
 
             if (entity != null) {
-                int i = hitResult.getDirection().get3DDataValue();
-
                 if (player.isCrouching()) {
-                    entity.inv.set(Ipla.getIndexFromHit(hitResult, true), stack);
+                    Pair<Integer,Integer> pair = Ipla.getIndexFromHit(hitResult, true);
+                    int x = pair.getFirst() * 4 + pair.getSecond();
+                    entity.inv.set(x, stack);
                     entity.quad.set(i, true);
                 } else {
                     entity.inv.set(i * 4, stack);
@@ -67,10 +69,9 @@ public record ItemPlacePayload(BlockPos pos, BlockHitResult hitResult) implement
             LayingItemEntity entity = (LayingItemEntity)level.getBlockEntity(tempPos);
 
             if (entity != null) {
-                int i = hitResult.getDirection().get3DDataValue();
-
-                if (player.isCrouching()) {
-                    int x = Ipla.getIndexFromHit(hitResult, (level.getBlockState(pos).getBlock()!= Ipla.lItemBlock.get()));
+                if (entity.quad.get(i)) {
+                    Pair<Integer,Integer> pair = Ipla.getIndexFromHit(hitResult, (level.getBlockState(pos).getBlock()!= Ipla.lItemBlock.get()));
+                    int x = pair.getFirst() * 4 + pair.getSecond();
                     if(entity.inv.get(x).isEmpty()) {
                         entity.inv.set(x, stack);
                         entity.quad.set(i, true);
