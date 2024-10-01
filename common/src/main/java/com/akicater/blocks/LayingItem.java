@@ -1,6 +1,7 @@
 package com.akicater.blocks;
 
 import com.akicater.Ipla;
+import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.Containers;
@@ -17,6 +18,7 @@ import net.minecraft.world.level.block.entity.ChiseledBookShelfBlockEntity;
 import net.minecraft.world.level.block.entity.FurnaceBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -78,15 +80,21 @@ public class LayingItem extends BaseEntityBlock {
         }
     }
 
-    public static void dropItem(Level level, BlockPos pos, int i, LayingItemEntity entity) {
-        Containers.dropItemStack(level, (double)pos.getX(), (double)pos.getY(), (double)pos.getZ(), entity.inv.get(i));
+    public static void dropItem(Level level, BlockPos pos, Pair<Integer, Integer> si, LayingItemEntity entity) {
+        int s = si.getFirst();
+        int i = si.getSecond();
+        if (entity.quad.get(s)) {
+            Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), entity.inv.get(s * 4 + i));
+        } else {
+            Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), entity.inv.get(s * 4));
+        }
     }
 
     @Override
     protected @NotNull InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
         LayingItemEntity entity = (LayingItemEntity) level.getBlockEntity(pos);
         if (entity != null) {
-            dropItem(level, pos, Ipla.getIndexForDropping(hit, entity), entity);
+            dropItem(level, pos, Ipla.getIndexFromHit(hit, false), entity);
 
             if (entity.isEmpty()) {
                 level.removeBlock(pos, false);
