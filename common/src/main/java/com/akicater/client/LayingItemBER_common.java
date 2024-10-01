@@ -13,6 +13,8 @@ import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec2;
+import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 import org.joml.Math;
 
@@ -30,26 +32,13 @@ public abstract class LayingItemBER_common implements BlockEntityRenderer<Laying
                     Axis.XP.rotationDegrees(90),    //DOWN
                     Axis.XN.rotationDegrees(90),    //UP
                     Axis.YP.rotationDegrees(180),   //NORTH
-                    Axis.XP.rotationDegrees(0),     //SOUTH
-                    Axis.YN.rotationDegrees(90),     //WEST
+                    Axis.YP.rotationDegrees(0),     //SOUTH
+                    Axis.YP.rotationDegrees(270),     //WEST
                     Axis.YP.rotationDegrees(90)    //EAST
             )
     );
 
-    public static List<Vector3f> pos = new ArrayList<>(
-            List.of(
-                    new Vector3f(0.5F, 1, 0.5F),
-                    new Vector3f(0.5F, 0, 0.5F),
-                    new Vector3f(0.5F, 0.5F, 1),
-                    new Vector3f(0.5F, 0.5F, 0),
-                    new Vector3f(1, 0.5F, 0.5F),
-                    new Vector3f(0, 0.5F, 0.5F)
-            )
-    );
-
-    static int getLight(Level level, BlockPos pos) {
-        return LightTexture.pack(LightTexture.block(level.getLightEmission(pos)), LightTexture.sky(level.getLightEmission(pos)));
-    }
+    public static Vec3 pos1 = new Vec3(0.5F, 0.5F, 0);
 
     public static Quaternionf rotateZ(float angle, Quaternionf dest) {
         float sin = Math.sin(angle * 0.5f);
@@ -84,21 +73,12 @@ public abstract class LayingItemBER_common implements BlockEntityRenderer<Laying
                         poseStack.pushPose();
 
                         boolean fullBlock = stack.getItem() instanceof BlockItem && ((BlockItem) stack.getItem()).getBlock().defaultBlockState().isCollisionShapeFullBlock(entity.getLevel(), entity.getBlockPos());
-                        manipulatePoseStack(poseStack, entity, fullBlock, oldRendering, iSize, bSize, s);
+                        manipStack(poseStack, entity, fullBlock, oldRendering, iSize, s, i);
 
-                        switch (s) {
-                            case 0, 1 -> poseStack.translate(
-                                    0.25f + (((i + 1) % 2 == 0) ? 0.5f : 0),
-                                    ((s == 0) ? 1 : 0),
-                                    0.25f + ((i > 1) ? 0.5f : 0));
-                            case 2, 3 -> poseStack.translate(
-                                    0.25f + (((i + 1) % 2 == 0) ? 0.5f : 0),
-                                    0.25f + ((i > 1) ? 0.5f : 0),
-                                    ((s == 2) ? 1 : 0));
-                            case 4, 5 -> poseStack.translate(
-                                    ((s == 4) ? 1 : 0),
-                                    0.25f + ((i > 1) ? 0.5f : 0),
-                                    0.25f + (((i + 1) % 2 == 0) ? 0.5f : 0));
+                        if ((fullBlock)) {
+                            poseStack.scale(bSize, bSize, bSize);
+                        } else {
+                            poseStack.scale(iSize, iSize, iSize);
                         }
 
                         itemRenderer.renderStatic(stack, ItemDisplayContext.FIXED, packedLight, packedOverlay, poseStack, buffer, entity.getLevel(), 1);
@@ -113,9 +93,13 @@ public abstract class LayingItemBER_common implements BlockEntityRenderer<Laying
                     poseStack.pushPose();
 
                     boolean fullBlock = stack.getItem() instanceof BlockItem && ((BlockItem) stack.getItem()).getBlock().defaultBlockState().isCollisionShapeFullBlock(entity.getLevel(), entity.getBlockPos());
-                    manipulatePoseStack(poseStack, entity, fullBlock, oldRendering, itemSize, blockSize, s);
+                    manipStack(poseStack, entity, fullBlock, oldRendering, itemSize, s, 4);
 
-                    poseStack.translate(pos.get(s).x, pos.get(s).y, pos.get(s).z);
+                    if ((fullBlock)) {
+                        poseStack.scale(blockSize, blockSize, blockSize);
+                    } else {
+                        poseStack.scale(itemSize, itemSize, itemSize);
+                    }
 
                     itemRenderer.renderStatic(stack, ItemDisplayContext.FIXED, packedLight, packedOverlay, poseStack, buffer, entity.getLevel(), 1);
 
@@ -125,24 +109,29 @@ public abstract class LayingItemBER_common implements BlockEntityRenderer<Laying
         }
     }
 
-    public static void manipulatePoseStack(PoseStack poseStack, LayingItemEntity entity, boolean fullBlock, boolean oldRendering, float iSize, float bSize, int s) {
-        // Differentiate item and block rendering
+
+    public static void manipStack(PoseStack poseStack, LayingItemEntity entity, boolean fullBlock, boolean oldRendering, float bSize, int s, int i) {
+        // If full block and old rendering disabled rotate 90 degrees
         poseStack.translate(0.5, 0, 0.5);
-        if (fullBlock) {
-            // Differentiate new and old block rendering
-            if (!oldRendering) {
-                poseStack.mulPose(rotateX(Math.toRadians(90), rotateZ(Math.toRadians(entity.rot.get(s * 4)), rot.get(s))));
-                poseStack.translate(0, 0.25 * bSize, 0);
+
+        poseStack.mulPose(rotateZ(Math.toRadians(entity.rot.get(s * 4)), rot.get(s)));
+
+        if (fullBlock && !oldRendering) {
+            poseStack.translate(-0.5, 0, -0.5);
+            poseStack.mulPose(Axis.XP.rotationDegrees(90));
+            if (i < 4) {
+                poseStack.translate(0.25f + (((i + 1) % 2 == 0) ? 0.5f : 0), 0.25 * bSize, -(0.25f + ((i > 1) ? 0.5f : 0)));
             } else {
-                poseStack.mulPose(rotateZ(Math.toRadians(entity.rot.get(s * 4)), rot.get(s)));
+                poseStack.translate(pos1.x, 0.25 * bSize, -pos1.y);
             }
-            poseStack.scale(bSize, bSize, bSize);
         } else {
-            poseStack.scale(iSize, iSize, iSize);
-            poseStack.translate(0, 0.025 * iSize, 0);
-            poseStack.mulPose(rotateZ(Math.toRadians(entity.rot.get(s * 4)), rot.get(s)));
+            poseStack.translate(-0.5, 0, -0.5);
+            if (i < 4) {
+                poseStack.translate(0.25f + (((i + 1) % 2 == 0) ? 0.5f : 0), 0.25f + ((i > 1) ? 0.5f : 0), 0);
+            } else {
+                poseStack.translate(pos1.x, pos1.y, 0);
+            }
         }
-        poseStack.translate(-0.5, 0, -0.5);
     }
 
     public abstract void render(LayingItemEntity entity, float partialTick, PoseStack poseStack, MultiBufferSource buffer, int packedLight, int packedOverlay);
