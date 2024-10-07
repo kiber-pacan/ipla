@@ -8,7 +8,9 @@ import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.world.ContainerHelper;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.shapes.BooleanOp;
@@ -23,17 +25,24 @@ import java.util.Optional;
 public class LayingItemEntity extends BlockEntity {
     // Inventory
     public NonNullList<ItemStack> inv;
+
     // Item rotations
-    public List<Integer> rot;
+    public NonNullList<Float> rot;
+    public NonNullList<Float> lastRot;
+
     // Quad mode for sides
-    public List<Boolean> quad;
+    public NonNullList<Boolean> quad;
+    public int LAST_ITEM;
 
 
     public LayingItemEntity(BlockPos pos, BlockState blockState) {
         super(Ipla.lItemBlockEntity.get(), pos, blockState);
 
         inv = NonNullList.withSize(24, ItemStack.EMPTY);
-        rot = NonNullList.withSize(24, 0);
+
+        rot = NonNullList.withSize(24, 0.0f);
+        lastRot = NonNullList.withSize(24, 0.0f);
+
         quad = NonNullList.withSize(6, false);
     }
 
@@ -46,6 +55,12 @@ public class LayingItemEntity extends BlockEntity {
             quad.set(i, compoundTag.getBoolean("s" + i));
         }
 
+        for (int i = 0; i < 24; i++) {
+            rot.set(i, compoundTag.getFloat("r" + i));
+        }
+
+        LAST_ITEM = compoundTag.getInt("L");
+
         super.loadAdditional(compoundTag, provider);
     }
 
@@ -57,6 +72,12 @@ public class LayingItemEntity extends BlockEntity {
         for (int i = 0; i < 6; i++) {
             compoundTag.putBoolean("s" + i, quad.get(i));
         }
+
+        for (int i = 0; i < 24; i++) {
+            compoundTag.putFloat("r" + i, rot.get(i));
+        }
+
+        compoundTag.putInt("L", LAST_ITEM);
     }
 
     /* At this point i just wanna fucking kill myself
@@ -69,27 +90,31 @@ public class LayingItemEntity extends BlockEntity {
         return this.saveCustomOnly(provider);
     }
 
+    public void setItem(int index, ItemStack stack) {
+        inv.set(index, stack.split(1));
+        LAST_ITEM = index;
+    }
 
     public VoxelShape getShape() {
         List<VoxelShape> tempShape = new ArrayList<>();
 
         if (!isSlotEmpty(0)) {
-            tempShape.add(Shapes.box(0.125f, 0.875f, 0.125f, 0.875f, 1.0f, 0.875f));
+            tempShape.add(Shapes.box(0.125, 0.875, 0.125, 0.875, 1.0, 0.875f));
         }
         if (!isSlotEmpty(1)) {
-            tempShape.add(Shapes.box(0.125f, 0.0f, 0.125f, 0.875f, 0.125f, 0.875f));
+            tempShape.add(Shapes.box(0.125, 0.0, 0.125, 0.875, 0.125, 0.875f));
         }
         if (!isSlotEmpty(2)) {
-            tempShape.add(Shapes.box(0.125f, 0.125f, 0.875f, 0.875f, 0.875f, 1.0f));
+            tempShape.add(Shapes.box(0.125, 0.125, 0.875, 0.875, 0.875, 1.0f));
         }
         if (!isSlotEmpty(3)) {
-            tempShape.add(Shapes.box(0.125f, 0.125f, 0.0f, 0.875f, 0.875f, 0.125f));
+            tempShape.add(Shapes.box(0.125, 0.125, 0.0, 0.875, 0.875, 0.125f));
         }
         if (!isSlotEmpty(4)) {
-            tempShape.add(Shapes.box(0.875f, 0.125f, 0.125f, 1.0f, 0.875f, 0.875f));
+            tempShape.add(Shapes.box(0.875, 0.125, 0.125, 1.0, 0.875, 0.875f));
         }
         if (!isSlotEmpty(5)) {
-            tempShape.add(Shapes.box(0.0f, 0.125f, 0.125f, 0.125f, 0.875f, 0.875f));
+            tempShape.add(Shapes.box(0.0, 0.125, 0.125, 0.125, 0.875, 0.875f));
         }
 
         Optional<VoxelShape> shape = tempShape.stream().reduce((v1, v2) -> Shapes.join(v1, v2, BooleanOp.OR));
