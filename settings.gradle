@@ -35,11 +35,16 @@ if (hasProperty("index")) {
 print("version: ${version}")
 
 def mc_versions = [
-        "1.19.4", // 0
-        "1.20.1", // 1
-        "1.20.4", // 2
-        "1.21"    // 3
+        "1.16.5", // 0
+        "1.17.1", // 1
+        "1.18.2", // 2
+        "1.19.2", // 3
+        "1.19.4", // 4
+        "1.20.1", // 5
+        "1.20.4", // 6
+        "1.21"    // 7
 ]
+
 writeBuildGradlePredefine(mc_versions, version)
 
 // Loading properties
@@ -47,7 +52,6 @@ def props = new Properties()
 props.load(new FileInputStream("${rootDir}/versions/${mc_versions.get(version)}.properties"))
 
 props.each { prop ->
-    //if (prop.key != null && prop.value != null)
     gradle.ext.set(prop.key, prop.value)
 }
 
