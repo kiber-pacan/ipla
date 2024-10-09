@@ -7,6 +7,6 @@ import net.fabricmc.api.ModInitializer;
 public final class IplaFabric implements ModInitializer {
     @Override
     public void onInitialize() {
-        Ipla.initiliazeServer();
+        Ipla.initializeServer();
     }
 }

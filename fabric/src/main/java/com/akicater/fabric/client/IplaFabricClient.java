@@ -9,7 +9,7 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
 public final class IplaFabricClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
-        Ipla.initiliazeClient();
+        Ipla.initializeClient();
         BlockEntityRenderers.register(Ipla.lItemBlockEntity.get(), LayingItemBER_fabric::new);
     }
 }
