@@ -4,7 +4,9 @@ import com.akicater.Ipla;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
+#if MC_VER >= V1_21
 import net.minecraft.core.component.DataComponentMap;
+#endif
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.world.ContainerHelper;
@@ -48,8 +50,8 @@ public class LayingItemEntity extends BlockEntity {
 
 
     // Load nbt data shit
-    protected void loadAdditional(CompoundTag compoundTag, HolderLookup.Provider provider) {
-        ContainerHelper.loadAllItems(compoundTag, this.inv, provider);
+    #if MC_VER >= V1_21 protected #else public #endif void #if MC_VER >= V1_21 loadAdditional #else load #endif(CompoundTag compoundTag#if MC_VER >= V1_21 , HolderLookup.Provider provider#endif) {
+        ContainerHelper.loadAllItems(compoundTag, this.inv #if MC_VER >= V1_21 , provider #endif);
 
         for (int i = 0; i < 6; i++) {
             quad.set(i, compoundTag.getBoolean("s" + i));
@@ -61,13 +63,13 @@ public class LayingItemEntity extends BlockEntity {
 
         LAST_ITEM = compoundTag.getInt("L");
 
-        super.loadAdditional(compoundTag, provider);
+        #if MC_VER >= V1_21 super.loadAdditional(compoundTag, provider); #else super.load(compoundTag); #endif
     }
 
     // Save nbt data
-    protected void saveAdditional(CompoundTag compoundTag, HolderLookup.Provider provider) {
-        super.saveAdditional(compoundTag, provider);
-        ContainerHelper.saveAllItems(compoundTag, this.inv, provider);
+    #if MC_VER >= V1_21 protected #else public #endif void saveAdditional(CompoundTag compoundTag#if MC_VER >= V1_21 , HolderLookup.Provider provider#endif) {
+        super.saveAdditional(compoundTag #if MC_VER >= V1_21 , provider #endif);
+        ContainerHelper.saveAllItems(compoundTag, this.inv #if MC_VER >= V1_21 , provider #endif);
 
         for (int i = 0; i < 6; i++) {
             compoundTag.putBoolean("s" + i, quad.get(i));
@@ -82,12 +84,12 @@ public class LayingItemEntity extends BlockEntity {
 
     /* At this point i just wanna fucking kill myself
     for god's sake don't ever ever ever forget to add this stupid method*/
-    public ClientboundBlockEntityDataPacket getUpdatePacket() {
-        return ClientboundBlockEntityDataPacket.create(this);
+    public @NotNull CompoundTag getUpdateTag(#if MC_VER >= V1_21 HolderLookup.Provider provider #endif) {
+        return #if MC_VER >= V1_21 this.saveCustomOnly(provider) #else this.saveWithoutMetadata() #endif;
     }
 
-    public @NotNull CompoundTag getUpdateTag(HolderLookup.Provider provider) {
-        return this.saveCustomOnly(provider);
+    public ClientboundBlockEntityDataPacket getUpdatePacket() {
+        return ClientboundBlockEntityDataPacket.create(this);
     }
 
     public void setItem(int index, ItemStack stack) {
@@ -95,6 +97,7 @@ public class LayingItemEntity extends BlockEntity {
         LAST_ITEM = index;
     }
 
+    //#if MC_VER >= V1_21
     public VoxelShape getShape() {
         List<VoxelShape> tempShape = new ArrayList<>();
 
@@ -118,13 +121,16 @@ public class LayingItemEntity extends BlockEntity {
         }
 
         Optional<VoxelShape> shape = tempShape.stream().reduce((v1, v2) -> Shapes.join(v1, v2, BooleanOp.OR));
-        return shape.orElseGet(() -> Shapes.box(0, 0, 0, 1, 1, 1));
+        return shape.orElseGet(() -> Shapes.box(0, 0, 0, 1, 0.1, 1));
     }
+    //#endif
 
 
     public boolean isSlotEmpty(int slot) {
         for (int i = slot * 4; i < slot * 4 + 4; i++) {
-            if (!this.inv.get(i).isEmpty()) return false;
+            if (!this.inv.get(i).isEmpty()) {
+                return false;
+            }
         }
 
         return true;

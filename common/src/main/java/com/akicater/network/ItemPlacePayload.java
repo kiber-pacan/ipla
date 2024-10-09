@@ -1,5 +1,7 @@
 package com.akicater.network;
 
+#if MC_VER >= V1_21
+
 import com.akicater.Ipla;
 import com.akicater.blocks.LayingItemEntity;
 import com.mojang.datafixers.util.Pair;
@@ -80,29 +82,26 @@ public record ItemPlacePayload(BlockPos pos, BlockHitResult hitResult) implement
             LayingItemEntity entity = (LayingItemEntity)level.getBlockEntity(tempPos);
 
             if (entity != null) {
-                if (entity.quad.get(i) || (player.isDiscrete() && !entity.quad.get(i))) {
-                    boolean bool = false;
-                    if (tempPos != pos) bool = true;
-                    Pair<Integer,Integer> pair = Ipla.getIndexFromHit(hitResult, bool);
+                boolean hitIsLItem = tempPos != pos;
 
-                    int x = pair.getFirst() * 4 + pair.getSecond();
+                Pair<Integer,Integer> pair = Ipla.getIndexFromHit(hitResult, hitIsLItem);
+                boolean quad = entity.quad.get(pair.getFirst()) || player.isDiscrete();
 
-                    if(entity.inv.get(x).isEmpty()) {
-                        entity.setItem(x, stack);
-                        entity.quad.set(i, true);
-                        entity.rot.set(x, random.nextFloat(-360, 360));
-                    }
-                } else {
-                    if(entity.inv.get(i * 4).isEmpty()) {
-                        entity.setItem(i * 4, stack);
-                        entity.rot.set(i * 4, random.nextFloat(-360, 360));
-                    }
+                int x = pair.getFirst() * 4 + ((quad) ? pair.getSecond() : 0);
+
+                if(entity.inv.get(x).isEmpty()) {
+                    entity.setItem(x, stack);
+                    entity.rot.set(x, random.nextFloat(-360, 360));
+
+                    if (quad)
+                        entity.quad.set(pair.getFirst(), true);
+
+                    level.playSeededSound(null, pos.getX(), pos.getY(), pos.getZ(), SoundEvents.PAINTING_PLACE, SoundSource.BLOCKS, 1, 1.4f, 1);
                 }
-
-                level.playSeededSound(null, pos.getX(), pos.getY(), pos.getZ(), SoundEvents.PAINTING_PLACE, SoundSource.BLOCKS, 1, 1.4f, 1);
 
                 entity.markDirty();
             }
         }
     }
 }
+#endif

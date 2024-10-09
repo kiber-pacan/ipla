@@ -3,10 +3,15 @@ package com.akicater.neoforge.client;
 import com.akicater.Ipla;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
+#if MC_VER >= V1_21
 import net.neoforged.fml.common.EventBusSubscriber;
+#else
+import net.neoforged.fml.common.Mod;
+#endif
+
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 
-@EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD, modid = Ipla.MOD_ID)
+@#if MC_VER < V1_21 Mod. #endif EventBusSubscriber(bus = #if MC_VER >= V1_21 EventBusSubscriber #else Mod.EventBusSubscriber #endif.Bus.MOD, modid = Ipla.MOD_ID)
 public class IplaNeoForgeClientEvents {
     @SubscribeEvent
     public static void registerEntityRenderers(EntityRenderersEvent.RegisterRenderers event) {

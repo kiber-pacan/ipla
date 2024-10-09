@@ -1,5 +1,7 @@
 package com.akicater.network;
 
+#if MC_VER >= V1_21
+
 import com.akicater.blocks.LayingItemEntity;
 import com.mojang.datafixers.util.Pair;
 import net.minecraft.network.FriendlyByteBuf;
@@ -42,3 +44,4 @@ public record ItemRotatePayload(float degrees, int y, boolean rounded, BlockHitR
         }
     }
 }
+#endif

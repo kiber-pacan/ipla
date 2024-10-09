@@ -11,10 +11,10 @@ import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 @Mod(Ipla.MOD_ID)
 public final class IplaNeoForge {
     public IplaNeoForge() {
-        Ipla.initiliazeServer();
+        Ipla.initializeServer();
 
         if (Dist.CLIENT.isClient()) {
-            Ipla.initiliazeClient();
+            Ipla.initializeClient();
         }
     }
 }
