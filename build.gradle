@@ -52,7 +52,6 @@ subprojects {
                 version : project.mod_version,
                 minecraft_version : project.minecraft_version,
                 fabric_loader_version : project.fabric_loader_version,
-                neoforge_loader_version : project.neoforge_version,
                 architectury_api_version : project.architectury_api_version,
                 yacl_version : project.yacl_version,
                 java : project.java_version,
