@@ -26,6 +26,7 @@ def writeBuildGradlePredefine(List<String> mc_versions, int version) {
 
 // Get minecraft version index
 int version
+
 if (hasProperty("index")) {
     version = Integer.valueOf(index)
 } else {

@@ -4,13 +4,13 @@ license = "${license}"
 
 [[mods]]
 modId = "${modid}"
-version = "${version}"
+version = "${mod_version}"
 displayName = "${name}"
 authors = "${authors}"
 description = '''
 ${description}
 '''
-logoFile = "assets/${modid}/icon.png"
+logoFile = "icon.png"
 
 [[dependencies."${modid}"]]
 modId = "neoforge"
