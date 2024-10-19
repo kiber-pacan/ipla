@@ -1,0 +1,22 @@
+{
+  "ipla.midnightconfig.title" : "Ipla config",
+
+  "ipla.midnightconfig.oldRendering" : "Old block rendering",
+  "ipla.midnightconfig.absSize" : "Absolute size",
+  "ipla.midnightconfig.iSize" : "Block size",
+  "ipla.midnightconfig.bSize" : "Item size",
+
+  "text.autoconfig.ipla.title" : "Ipla config",
+
+  "text.autoconfig.ipla.option.oldRendering" : "Old block rendering",
+  "text.autoconfig.ipla.option.absSize" : "Absolute size",
+  "text.autoconfig.ipla.option.iSize" : "Block size",
+  "text.autoconfig.ipla.option.bSize" : "Item size",
+
+  "key.categories.ipla" : "Ipla",
+
+  "key.ipla.place_item_key" : "Place item",
+  "key.ipla.rotate_item_key" : "Rotate item",
+  "key.ipla.rotate_rounded_item_key" : "Rounded rotation",
+  "key.ipla.hide_item_key" : "Hide item bounding box"
+}

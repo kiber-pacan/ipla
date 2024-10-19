@@ -1,0 +1,22 @@
+{
+  "ipla.midnightconfig.title" : "конфигурация Ipla",
+
+  "ipla.midnightconfig.oldRendering" : "Старая отрисовка блоков",
+  "ipla.midnightconfig.absSize" : "Абсолютный размер",
+  "ipla.midnightconfig.iSize" : "Размер блоков",
+  "ipla.midnightconfig.bSize" : "Размер предметов",
+
+  "text.autoconfig.ipla.title" : "конфигурация Ipla",
+
+  "text.autoconfig.ipla.option.oldRendering" : "Старая отрисовка блоков",
+  "text.autoconfig.ipla.option.absSize" : "Абсолютный размер",
+  "text.autoconfig.ipla.option.iSize" : "Размер блоков",
+  "text.autoconfig.ipla.option.bSize" : "Размер предметов",
+
+  "key.categories.ipla" : "Ipla",
+
+  "key.ipla.place_item_key" : "Положить предмет",
+  "key.ipla.rotate_item_key" : "Вращать предмет",
+  "key.ipla.rotate_rounded_item_key" : "Округлённое вращение",
+  "key.ipla.hide_item_key" : "Скрыть хитбокс предмета"
+}
