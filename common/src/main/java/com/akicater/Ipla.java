@@ -2,10 +2,10 @@ package com.akicater;
 
 import com.akicater.blocks.LayingItem;
 import com.akicater.blocks.LayingItemEntity;
-#if MC_VER >= V1_21
-import com.akicater.network.ItemPlacePayload;
-import com.akicater.network.ItemRotatePayload;
-#endif
+import com.akicater.client.IplaConfig;
+
+import io.netty.buffer.Unpooled;
+import net.minecraft.core.Registry;
 import com.google.common.base.Suppliers;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.datafixers.util.Pair;
@@ -16,13 +16,10 @@ import dev.architectury.networking.NetworkManager;
 import dev.architectury.platform.Platform;
 import dev.architectury.registry.client.keymappings.KeyMappingRegistry;
 import dev.architectury.registry.registries.Registrar;
-import dev.architectury.registry.registries.RegistrarManager;
 import dev.architectury.registry.registries.RegistrySupplier;
-import io.netty.buffer.Unpooled;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
@@ -37,7 +34,6 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.level.material.Material;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -49,14 +45,50 @@ import java.util.Random;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
 
+
+#if MC_VER >= V1_21
+import com.akicater.network.ItemPlacePayload;
+import com.akicater.network.ItemRotatePayload;
+#endif
+
+#if MC_VER >= V1_19_4
+import dev.architectury.event.events.client.ClientLifecycleEvent;
+import dev.architectury.registry.registries.RegistrarManager;
+import net.minecraft.core.registries.Registries;
+#endif
+
+#if MC_VER >= V1_19_2 && MC_VER < V1_20_4
+import eu.midnightdust.lib.config.MidnightConfig;
+#endif
+
+#if MC_VER <= V1_19_2
+import dev.architectury.registry.registries.Registries;
+#endif
+
+#if MC_VER < V1_20_1
+import net.minecraft.world.level.material.Material;
+#endif
+
+#if MC_VER <= V1_18_2
+import me.shedaniel.autoconfig.serializer.Toml4jConfigSerializer;
+import me.shedaniel.autoconfig.AutoConfig;
+#endif
+
 public final class Ipla {
     public static final String MOD_ID = "ipla";
     public static final Logger LOGGER = Logger.getLogger(MOD_ID);
 
+    #if MC_VER >= V1_19_4
     public static final Supplier<RegistrarManager> MANAGER = Suppliers.memoize(() -> RegistrarManager.get(MOD_ID));
 
     public static final Registrar<Block> blocks = MANAGER.get().get(Registries.BLOCK);
     public static final Registrar<BlockEntityType<?>> blockEntities = MANAGER.get().get(Registries.BLOCK_ENTITY_TYPE);
+    #else
+    public static final Supplier<Registries> MANAGER = Suppliers.memoize(() -> Registries.get(MOD_ID));
+
+    public static final Registrar<Block> blocks = MANAGER.get().get(Registry.BLOCK);
+    public static final Registrar<BlockEntityType<?>> blockEntities = MANAGER.get().get(Registry.BLOCK_ENTITY_TYPE);
+    #endif
 
     public static RegistrySupplier<LayingItem> lItemBlock;
     public static RegistrySupplier<BlockEntityType<LayingItemEntity>> lItemBlockEntity;
@@ -72,12 +104,13 @@ public final class Ipla {
     public static ResourceLocation ROTATE_ITEM;
 
     public static void initializeServer() {
-        lItemBlock = blocks.register(#if MC_VER >= V1_21 ResourceLocation.fromNamespaceAndPath #else new ResourceLocation #endif(MOD_ID, "l_item"), () -> new LayingItem(BlockBehaviour.Properties.of(#if MC_VER <= V1_20_1 Material.AIR #endif).instabreak().dynamicShape().noOcclusion()));
+        lItemBlock = blocks.register(#if MC_VER >= V1_21 ResourceLocation.fromNamespaceAndPath #else new ResourceLocation #endif(MOD_ID, "l_item"), () -> new LayingItem(BlockBehaviour.Properties.of(#if MC_VER < V1_20_1 Material.AIR #endif).instabreak().dynamicShape().noOcclusion()));
 
         lItemBlockEntity = blockEntities.register(
                 #if MC_VER >= V1_21 ResourceLocation.fromNamespaceAndPath #else new ResourceLocation #endif(MOD_ID, "l_item_entity"),
                 () -> BlockEntityType.Builder.of(LayingItemEntity::new, lItemBlock.get()).build(null)
         );
+
 
         #if MC_VER >= V1_21
         NetworkManager.registerReceiver(NetworkManager.Side.C2S, ItemPlacePayload.TYPE, ItemPlacePayload.CODEC, (buf, context) ->
@@ -101,7 +134,7 @@ public final class Ipla {
 
             Player player = context.getPlayer();
 
-            Level level = #if MC_VER <= V1_20_1 player.level #else player.level() #endif;
+            Level level = #if MC_VER < V1_20_1 player.level #else player.level() #endif;
 
 
             BlockPos tempPos = pos;
@@ -139,7 +172,7 @@ public final class Ipla {
                         entity.rot.set(i * 4, random.nextFloat(-360, 360));
                     }
 
-                    level.playSeededSound(null, pos.getX(), pos.getY(), pos.getZ(), SoundEvents.PAINTING_PLACE, SoundSource.BLOCKS, 1, 1.4f, 1);
+                    level.playSound(null, pos.getX(), pos.getY(), pos.getZ(), SoundEvents.PAINTING_PLACE, SoundSource.BLOCKS, 1, 1.4f);
 
                     entity.markDirty();
                 }
@@ -161,7 +194,7 @@ public final class Ipla {
                         if (quad)
                             entity.quad.set(pair.getFirst(), true);
 
-                        level.playSeededSound(null, pos.getX(), pos.getY(), pos.getZ(), SoundEvents.PAINTING_PLACE, SoundSource.BLOCKS, 1, 1.4f, 1);
+                        level.playSound(null, pos.getX(), pos.getY(), pos.getZ(), SoundEvents.PAINTING_PLACE, SoundSource.BLOCKS, 1, 1.4f);
                     }
 
                     entity.markDirty();
@@ -170,7 +203,7 @@ public final class Ipla {
         });
 
         NetworkManager.registerReceiver(NetworkManager.Side.C2S, ROTATE_ITEM, (buf, context) -> {
-            Level world = #if MC_VER <= V1_20_1 context.getPlayer().level #else player.level() #endif;
+            Level world = context.getPlayer().level#if MC_VER >= V1_20_1 () #endif;
 
             float degrees = buf.readFloat();
             int y = buf.readInt();
@@ -199,6 +232,12 @@ public final class Ipla {
     }
 
     public static void initializeClient() {
+        #if MC_VER > V1_18_2 && MC_VER < V1_20_4
+        MidnightConfig.init(MOD_ID, IplaConfig.class);
+        #elif MC_VER <= V1_18_2
+            AutoConfig.register(IplaConfig.class, Toml4jConfigSerializer::new);
+        #endif
+
         PLACE_ITEM_KEY = new KeyMapping(
                 "key.ipla.place_item_key",
                 InputConstants.Type.KEYSYM,
@@ -214,7 +253,7 @@ public final class Ipla {
         );
 
         HIDE_ITEM_KEY = new KeyMapping(
-                "key.ipla.retrieve_item_key",
+                "key.ipla.hide_item_key",
                 InputConstants.Type.KEYSYM,
                 InputConstants.KEY_B,
                 "key.categories.ipla"
@@ -291,6 +330,16 @@ public final class Ipla {
 
             return EventResult.interruptDefault();
         });
+
+        #if MC_VER >= V1_20_4
+        ClientLifecycleEvent.CLIENT_STARTED.register((minecraft) -> {
+            IplaConfig.HANDLER.load();
+        });
+
+        ClientLifecycleEvent.CLIENT_STOPPING.register((minecraft) -> {
+            IplaConfig.HANDLER.save();
+        });
+        #endif
     }
 
     static List<AABB> boxes = new ArrayList<>(
