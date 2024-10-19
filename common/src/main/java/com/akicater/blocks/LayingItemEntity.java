@@ -2,23 +2,21 @@ package com.akicater.blocks;
 
 import com.akicater.Ipla;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
 #if MC_VER >= V1_21
-import net.minecraft.core.component.DataComponentMap;
+import net.minecraft.core.HolderLookup;
 #endif
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.world.ContainerHelper;
-import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,7 +32,6 @@ public class LayingItemEntity extends BlockEntity {
 
     // Quad mode for sides
     public NonNullList<Boolean> quad;
-    public int LAST_ITEM;
 
 
     public LayingItemEntity(BlockPos pos, BlockState blockState) {
@@ -51,6 +48,7 @@ public class LayingItemEntity extends BlockEntity {
 
     // Load nbt data shit
     #if MC_VER >= V1_21 protected #else public #endif void #if MC_VER >= V1_21 loadAdditional #else load #endif(CompoundTag compoundTag#if MC_VER >= V1_21 , HolderLookup.Provider provider#endif) {
+        #if MC_VER >= V1_21 super.loadAdditional(compoundTag, provider); #else super.load(compoundTag); #endif
         ContainerHelper.loadAllItems(compoundTag, this.inv #if MC_VER >= V1_21 , provider #endif);
 
         for (int i = 0; i < 6; i++) {
@@ -60,15 +58,12 @@ public class LayingItemEntity extends BlockEntity {
         for (int i = 0; i < 24; i++) {
             rot.set(i, compoundTag.getFloat("r" + i));
         }
-
-        LAST_ITEM = compoundTag.getInt("L");
-
-        #if MC_VER >= V1_21 super.loadAdditional(compoundTag, provider); #else super.load(compoundTag); #endif
     }
 
     // Save nbt data
-    #if MC_VER >= V1_21 protected #else public #endif void saveAdditional(CompoundTag compoundTag#if MC_VER >= V1_21 , HolderLookup.Provider provider#endif) {
-        super.saveAdditional(compoundTag #if MC_VER >= V1_21 , provider #endif);
+    #if MC_VER >= V1_21 protected #else public @NotNull #endif  #if MC_VER < V1_18_2 CompoundTag save #else void saveAdditional #endif (CompoundTag compoundTag#if MC_VER >= V1_21 , HolderLookup.Provider provider#endif) {
+        super.#if MC_VER < V1_18_2 save #else saveAdditional #endif(compoundTag #if MC_VER >= V1_21 , provider #endif);
+
         ContainerHelper.saveAllItems(compoundTag, this.inv #if MC_VER >= V1_21 , provider #endif);
 
         for (int i = 0; i < 6; i++) {
@@ -79,22 +74,29 @@ public class LayingItemEntity extends BlockEntity {
             compoundTag.putFloat("r" + i, rot.get(i));
         }
 
-        compoundTag.putInt("L", LAST_ITEM);
+        #if MC_VER < V1_18_2
+        return compoundTag;
+        #endif
     }
 
     /* At this point i just wanna fucking kill myself
-    for god's sake don't ever ever ever forget to add this stupid method*/
-    public @NotNull CompoundTag getUpdateTag(#if MC_VER >= V1_21 HolderLookup.Provider provider #endif) {
-        return #if MC_VER >= V1_21 this.saveCustomOnly(provider) #else this.saveWithoutMetadata() #endif;
+    for god's sake don't ever ever ever forget to add these stupid methods*/
+    @Nullable
+    public ClientboundBlockEntityDataPacket getUpdatePacket() {
+        #if MC_VER < V1_18_2
+        return new ClientboundBlockEntityDataPacket(this.worldPosition, -1, this.save(new CompoundTag()));
+        #else
+        return ClientboundBlockEntityDataPacket.create(this);
+        #endif
     }
 
-    public ClientboundBlockEntityDataPacket getUpdatePacket() {
-        return ClientboundBlockEntityDataPacket.create(this);
+    public @NotNull CompoundTag getUpdateTag(#if MC_VER >= V1_21 HolderLookup.Provider provider #endif) {
+        return #if MC_VER < V1_18_2 this.save(new CompoundTag()) #elif MC_VER >= V1_21 this.saveCustomOnly(provider) #else this.saveWithoutMetadata() #endif;
     }
+
 
     public void setItem(int index, ItemStack stack) {
         inv.set(index, stack.split(1));
-        LAST_ITEM = index;
     }
 
     //#if MC_VER >= V1_21
@@ -148,6 +150,6 @@ public class LayingItemEntity extends BlockEntity {
     // Mark dirty so client get synced with server
     public void markDirty() {
         this.setChanged();
-        this.level.sendBlockUpdated(this.getBlockPos(), this.getBlockState(), this.getBlockState(), 3);
+        this.getLevel().sendBlockUpdated(this.getBlockPos(), this.getBlockState(), this.getBlockState(), 3);
     }
 }
