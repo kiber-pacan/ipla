@@ -2,8 +2,31 @@ architectury {
     common rootProject.enabled_platforms.split(',')
 }
 
+repositories {
+    maven {
+        url 'https://maven.isxander.dev/releases'
+    }
+    maven {
+        url = "https://api.modrinth.com/maven"
+    }
+}
+
 dependencies {
     modImplementation "net.fabricmc:fabric-loader:$rootProject.fabric_loader_version"
 
     modImplementation "dev.architectury:architectury:$rootProject.architectury_api_version"
+
+    if (rootProject.hasProperty("yacl_version")) {
+        modImplementation "dev.isxander:yet-another-config-lib:${project.yacl_version}+${rootProject.minecraft_version}-fabric"
+    } else if(rootProject.hasProperty("midnightlib_version")) {
+        if (rootProject.minecraft_version == "1.20.1") {
+            modImplementation "maven.modrinth:midnightlib:1.4.1-fabric"
+        } else {
+            modImplementation "maven.modrinth:midnightlib:${project.midnightlib_version}-fabric"
+        }
+    } else {
+        modImplementation("me.shedaniel.cloth:cloth-config-fabric:${cloth_version}") {
+            exclude(group: "net.fabricmc.fabric-api")
+        }
+    }
 }
