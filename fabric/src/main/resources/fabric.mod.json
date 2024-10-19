@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "${modid}",
-  "version": "${version}",
+  "version": "${mod_version}",
   "name": "${name}",
   "description": "${description}",
   "authors": [
@@ -11,7 +11,7 @@
     "sources": "${sources}"
   },
   "license": "${license}",
-  "icon": "assets/${modid}/icon.png",
+  "icon": "icon.png",
   "environment": "*",
   "entrypoints": {
     "main": [
@@ -19,6 +19,9 @@
     ],
     "client": [
       "com.akicater.fabric.client.IplaFabricClient"
+    ],
+    "modmenu": [
+      "com.akicater.fabric.client.ModMenuIntegration"
     ]
   },
   "mixins": [
@@ -28,7 +31,6 @@
     "fabricloader": ">=${fabric_loader_version}",
     "minecraft": "~${minecraft_version}",
     "java": ">=${java}",
-    "architectury": ">=${architectury_api_version}",
-    "fabric-api": "*"
+    "architectury": ">=${architectury_api_version}"
   }
 }
