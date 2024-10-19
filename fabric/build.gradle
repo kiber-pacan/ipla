@@ -29,6 +29,17 @@ repositories {
         name 'Xander Maven'
         url 'https://maven.isxander.dev/releases'
     }
+    maven {
+        name = "Terraformers"
+        url = "https://maven.terraformersmc.com/"
+    }
+    maven {
+        url "https://maven.nucleoid.xyz/"
+        name "Nucleoid"
+    }
+    maven {
+        url = "https://api.modrinth.com/maven"
+    }
 }
 
 dependencies {
@@ -38,9 +49,21 @@ dependencies {
 
     modImplementation "dev.architectury:architectury-fabric:$rootProject.architectury_api_version"
 
-    if(rootProject.minecraft_version == "1.20.1" || rootProject.minecraft_version == "1.20.4" || rootProject.minecraft_version == "1.21") {
+    if (rootProject.hasProperty("yacl_version")) {
         modImplementation "dev.isxander:yet-another-config-lib:${project.yacl_version}+${rootProject.minecraft_version}-fabric"
+    } else if(rootProject.hasProperty("midnightlib_version")) {
+        if (rootProject.minecraft_version == "1.20.1") {
+            modImplementation "maven.modrinth:midnightlib:1.4.1-fabric"
+        } else {
+            modImplementation "maven.modrinth:midnightlib:${project.midnightlib_version}-fabric"
+        }
+    } else {
+        modImplementation("me.shedaniel.cloth:cloth-config-fabric:${cloth_version}") {
+            exclude(group: "net.fabricmc.fabric-api")
+        }
     }
+
+    modImplementation("com.terraformersmc:modmenu:${rootProject.modmenu_version}")
 
     common(project(path: ':common', configuration: 'namedElements')) { transitive false }
     shadowBundle project(path: ':common', configuration: 'transformProductionFabric')
