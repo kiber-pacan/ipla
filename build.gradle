@@ -10,10 +10,9 @@ plugins {
 }
 
 project.gradle.ext.getProperties().each { prop ->
-    //if (prop.key != null && prop.value != null)
+    if (prop.key != null && prop.value != null)
     rootProject.ext.set(prop.key, prop.value)
 }
-
 
 architectury {
     minecraft = project.minecraft_version
@@ -27,13 +26,15 @@ allprojects {
 subprojects {
     apply plugin: 'dev.architectury.loom'
     apply plugin: 'architectury-plugin'
+
     apply plugin: 'maven-publish'
     apply plugin: "systems.manifold.manifold-gradle-plugin"
-    apply plugin: "com.modrinth.minotaur"
+
     apply plugin: "com.matthewprenger.cursegradle"
+    apply plugin: "com.modrinth.minotaur"
 
     base {
-        archivesName = "$rootProject.archives_name-$project.name"
+        archivesName = "${rootProject.archives_name}-${project.minecraft_version}-${project.name}"
     }
 
     repositories {
@@ -43,17 +44,20 @@ subprojects {
         }
     }
 
+    configurations {
+        testImplementation.extendsFrom annotationProcessor
+    }
+
     loom {
         silentMojangMappingsLicense()
     }
 
     processResources {
         def replaceProperties = [
-                version : project.mod_version,
+                mod_version : project.mod_version,
                 minecraft_version : project.minecraft_version,
                 fabric_loader_version : project.fabric_loader_version,
                 architectury_api_version : project.architectury_api_version,
-                yacl_version : project.yacl_version,
                 java : project.java_version,
                 name : "Ipla",
                 modid : archives_name,
@@ -68,6 +72,12 @@ subprojects {
         }
         if (rootProject.hasProperty("neoforge_version")) {
             replaceProperties.put("neoforge_loader_version", project.neoforge_version)
+        }
+        if (rootProject.hasProperty("yacl_version")) {
+            replaceProperties.put("yacl_version", project.yacl_version)
+        }
+        if (rootProject.hasProperty("midnightlib_version")) {
+            replaceProperties.put("midnightlib_version", project.midnightlib_version)
         }
 
         def files = ["fabric.mod.json", "META-INF/mods.toml", "META-INF/neoforge.mods.toml", "quilt.mod.json"]
@@ -92,15 +102,26 @@ subprojects {
         }
     }
 
-    java {
-        withSourcesJar()
+    def loader = project.name
 
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
-    }
-
-    tasks.withType(JavaCompile).configureEach {
-        it.options.release = 21
+    modrinth {
+        token = ""
+        projectId = "ipla"
+        versionName = archives_name + " " + mod_version
+        versionNumber = mod_version
+        versionType = "release"
+        uploadFile = remapJar
+        gameVersions = [rootProject.minecraft_version]
+        loaders = [loader]
+        dependencies {
+            if (loader.equals("fabric")) {
+                required.project "fabric-api"
+                required.project "modmenu"
+            }
+            required.project "yacl"
+            required.project "architectury-api"
+        }
+        failSilently = true
     }
 
     publishing {
