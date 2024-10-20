@@ -52,6 +52,24 @@ subprojects {
         silentMojangMappingsLicense()
     }
 
+    java {
+        withSourcesJar()
+
+        toolchain {
+            if (project.java_version == "17") {
+                languageVersion = JavaLanguageVersion.of(17)
+                vendor = JvmVendorSpec.ADOPTIUM
+                //installationPath = file("D:/jdk-17.0.12+7")
+            } else {
+                languageVersion = JavaLanguageVersion.of(21)
+                vendor = JvmVendorSpec.ADOPTIUM
+                //installationPath = file("D:/jdk-21.0.4+7")
+            }
+        }
+
+
+    }
+
     processResources {
         def replaceProperties = [
                 mod_version : project.mod_version,
@@ -118,21 +136,56 @@ subprojects {
                 required.project "fabric-api"
                 required.project "modmenu"
             }
-            required.project "yacl"
+
+            if (rootProject.hasProperty("yacl_version")) {
+                required.project "yacl"
+            }
+
+            if (rootProject.hasProperty("midnightlib_version")) {
+                required.project "midnightlib"
+            }
+
             required.project "architectury-api"
         }
         failSilently = true
     }
 
-    publishing {
-        publications {
-            mavenJava(MavenPublication) {
-                artifactId = base.archivesName.get()
-                from components.java
-            }
-        }
+    curseforge {
+        apiKey = ""
+        project {
+            id = "ipla"
+            releaseType = "release"
+            addGameVersion mod_version
+            addArtifact remapJar
 
-        repositories {
+            relations {
+                if (loader.equals("fabric")) {
+                    requiredDependency "fabric-api"
+                    requiredDependency "modmenu"
+                }
+
+                if (rootProject.hasProperty("yacl_version")) {
+                    requiredDependency "yacl"
+                }
+
+                if (rootProject.hasProperty("midnightlib_version")) {
+                    requiredDependency "midnightlib"
+                }
+
+                requiredDependency "architectury-api"
+            }
+
+            options {
+                debug = false
+                javaVersionAutoDetect = true
+                detectNewerJava = false
+                javaIntegration = true
+                forgeGradleIntegration = false
+            }
+
+            mainArtifact(jar) {
+                displayName = archives_name + " " + mod_version
+            }
         }
     }
 }
