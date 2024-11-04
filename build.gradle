@@ -5,7 +5,7 @@ plugins {
     id 'com.github.johnrengelman.shadow' version '8.1.1' apply false
     id 'systems.manifold.manifold-gradle-plugin' version '0.0.2-alpha'
 
-    id 'com.matthewprenger.cursegradle' version '1.4.0' apply false
+    id "com.matthewprenger.cursegradle" version "1.4.0" apply false
     id 'com.modrinth.minotaur' version '2.+' apply false
 }
 
@@ -59,15 +59,11 @@ subprojects {
             if (project.java_version == "17") {
                 languageVersion = JavaLanguageVersion.of(17)
                 vendor = JvmVendorSpec.ADOPTIUM
-                //installationPath = file("D:/jdk-17.0.12+7")
             } else {
                 languageVersion = JavaLanguageVersion.of(21)
                 vendor = JvmVendorSpec.ADOPTIUM
-                //installationPath = file("D:/jdk-21.0.4+7")
             }
         }
-
-
     }
 
     processResources {
@@ -82,7 +78,7 @@ subprojects {
                 description : "Mod that lets you place items on any block side",
                 authors : "akicater",
                 license : "MIT",
-                sources : "https://github.com/"
+                sources : "https://github.com/kiber-pacan/ipla"
         ]
 
         if (rootProject.hasProperty("forge_version")) {
@@ -152,40 +148,41 @@ subprojects {
 
     curseforge {
         apiKey = ""
+
         project {
-            id = "ipla"
+            id = "1124962"
             releaseType = "release"
             addGameVersion mod_version
-            addArtifact remapJar
 
-            relations {
-                if (loader.equals("fabric")) {
-                    requiredDependency "fabric-api"
-                    requiredDependency "modmenu"
+            mainArtifact(remapJar.archiveFile.get().asFile) {
+                it.displayName = archives_name + " " + mod_version
+
+                relations {
+                    if (loader.equals("fabric")) {
+                        requiredDependency "fabric-api"
+                        requiredDependency "modmenu"
+                    }
+
+                    if (rootProject.hasProperty("yacl_version")) {
+                        requiredDependency "yacl"
+                    }
+
+                    if (rootProject.hasProperty("midnightlib_version")) {
+                        requiredDependency "midnightlib"
+                    }
+
+                    requiredDependency "architectury-api"
                 }
-
-                if (rootProject.hasProperty("yacl_version")) {
-                    requiredDependency "yacl"
-                }
-
-                if (rootProject.hasProperty("midnightlib_version")) {
-                    requiredDependency "midnightlib"
-                }
-
-                requiredDependency "architectury-api"
             }
 
-            options {
-                debug = false
-                javaVersionAutoDetect = true
-                detectNewerJava = false
-                javaIntegration = true
-                forgeGradleIntegration = false
+            afterEvaluate {
+                uploadTask.dependsOn("build")
             }
+        }
 
-            mainArtifact(jar) {
-                displayName = archives_name + " " + mod_version
-            }
+        options {
+            forgeGradleIntegration = false
+            javaVersionAutoDetect = false
         }
     }
 }
