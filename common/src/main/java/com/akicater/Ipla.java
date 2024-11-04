@@ -95,7 +95,6 @@ public final class Ipla {
 
     public static KeyMapping PLACE_ITEM_KEY;
     public static KeyMapping ROTATE_ITEM_KEY;
-    public static KeyMapping HIDE_ITEM_KEY;
     public static KeyMapping ROTATE_ROUNDED_ITEM_KEY;
 
     public static final Random RANDOM = new Random();
@@ -252,13 +251,6 @@ public final class Ipla {
                 "key.categories.ipla"
         );
 
-        HIDE_ITEM_KEY = new KeyMapping(
-                "key.ipla.hide_item_key",
-                InputConstants.Type.KEYSYM,
-                InputConstants.KEY_B,
-                "key.categories.ipla"
-        );
-
         ROTATE_ROUNDED_ITEM_KEY = new KeyMapping(
                 "key.ipla.rotate_rounded_item_key",
                 InputConstants.Type.KEYSYM,
@@ -268,7 +260,6 @@ public final class Ipla {
 
         KeyMappingRegistry.register(PLACE_ITEM_KEY);
         KeyMappingRegistry.register(ROTATE_ITEM_KEY);
-        KeyMappingRegistry.register(HIDE_ITEM_KEY);
         KeyMappingRegistry.register(ROTATE_ROUNDED_ITEM_KEY);
 
         ClientTickEvent.CLIENT_POST.register(client -> {

@@ -81,19 +81,6 @@ public class LayingItem extends BaseEntityBlock implements SimpleWaterloggedBloc
     // Get voxel shape of placed items
     @Override
     #if MC_VER >= V1_21 protected @NotNull VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) #else public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context)  #endif {
-       LayingItemEntity entity = (LayingItemEntity) level.getBlockEntity(pos);
-
-        if (Ipla.HIDE_ITEM_KEY.isDown()) {
-            return Shapes.empty();
-        } else if (entity != null) {
-            return entity.getShape();
-        }
-
-        return super.getShape(state, level, pos, context);
-    }
-
-    @Override
-    #if MC_VER >= V1_21 protected @NotNull VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) #else public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context)  #endif {
         LayingItemEntity entity = (LayingItemEntity) level.getBlockEntity(pos);
 
         if (entity != null) {
@@ -102,7 +89,6 @@ public class LayingItem extends BaseEntityBlock implements SimpleWaterloggedBloc
 
         return super.getShape(state, level, pos, context);
     }
-
 
     // Drop items on break
     @Override
