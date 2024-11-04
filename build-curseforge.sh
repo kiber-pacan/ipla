@@ -5,9 +5,8 @@ mkdir -p buildAllJars | true
 y=3
 
 for i in $(seq 5 $END); do
-    #sh gradlew clean -Pindex="$y"
-    sh gradlew build modrinth -Pindex="$y"
-    mv ./*/build/libs/ipla-*-*-*.jar "buildAllJars"
+    sh gradlew clean -Pindex="$y"
+    sh gradlew build curseforge -Pindex="$y"
     ((y=y+1))
 done
 
