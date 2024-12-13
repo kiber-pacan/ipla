@@ -119,7 +119,7 @@ subprojects {
     def loader = project.name
 
     modrinth {
-        token = ""
+        token = "mrp_h7QqmzyBcHEp9YQs2aSooWNmgePhkgjRrjrRf6azlcUUlSKK5MHYqnb2JWXx"
         projectId = "ipla"
         versionName = archives_name + " " + mod_version
         versionNumber = mod_version
@@ -147,7 +147,7 @@ subprojects {
     }
 
     curseforge {
-        apiKey = ""
+        apiKey = "e665bc7e-937b-4f49-a957-badb4d7fb894"
 
         project {
             id = "1124962"

@@ -127,16 +127,10 @@ public class LayingItem extends BaseEntityBlock implements SimpleWaterloggedBloc
             if (!entity.quad.get(s)) i = 0;
             if (entity.inv.get(s * 4 + i).isEmpty()) return InteractionResult.FAIL;
 
-            if (player.getMainHandItem().isEmpty()) {
-                player.setItemInHand(InteractionHand.MAIN_HAND, entity.inv.get(s * 4 + i));
-                entity.inv.set(s * 4 + i, ItemStack.EMPTY);
+            player.addItem(entity.inv.get(s * 4 + i));
+            entity.inv.set(s * 4 + i, ItemStack.EMPTY);
 
-                level.playSound(null, pos.getX(), pos.getY(), pos.getZ(), #if MC_VER >= V1_18_2 SoundEvents.BUNDLE_REMOVE_ONE #else SoundEvents.DISPENSER_FAIL #endif , SoundSource.BLOCKS, 1, 1.4f);
-            } else {
-                Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), entity.inv.get(s * 4 + i));
-
-                level.playSound(null, pos.getX(), pos.getY(), pos.getZ(), #if MC_VER >= V1_18_2 SoundEvents.BUNDLE_REMOVE_ONE #else SoundEvents.DISPENSER_FAIL #endif, SoundSource.BLOCKS, 1, 1.4f);
-            }
+            level.playSound(null, pos.getX(), pos.getY(), pos.getZ(), #if MC_VER >= V1_18_2 SoundEvents.BUNDLE_REMOVE_ONE #else SoundEvents.DISPENSER_FAIL #endif , SoundSource.BLOCKS, 1, 1.4f);
 
             if (entity.isEmpty()) {
                 level.removeBlock(pos, false);
