@@ -1,18 +1,20 @@
 package com.akicater.network;
 
 #if MC_VER >= V1_21
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.InteractionHand;
+import org.jetbrains.annotations.NotNull;
+#endif
 
 import com.akicater.Ipla;
 import com.akicater.blocks.LayingItemEntity;
 import com.mojang.datafixers.util.Pair;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -21,13 +23,14 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.BlockHitResult;
-import org.jetbrains.annotations.NotNull;
+
 
 import java.util.Random;
 
 import static com.akicater.Ipla.MOD_ID;
 
-public record ItemPlacePayload(BlockPos pos, BlockHitResult hitResult) implements CustomPacketPayload {
+public #if MC_VER >= V1_21 record #else class #endif ItemPlacePayload #if MC_VER >= V1_21 (BlockPos pos, BlockHitResult hitResult) implements CustomPacketPayload #endif {
+    #if MC_VER >= V1_21
     public static final Type<ItemPlacePayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(MOD_ID, "place_item"));
     public static final StreamCodec<FriendlyByteBuf, ItemPlacePayload> CODEC = StreamCodec.of((buf, value) -> buf.writeBlockPos(value.pos).writeBlockHitResult(value.hitResult), buf -> new ItemPlacePayload(buf.readBlockPos(), buf.readBlockHitResult()));
 
@@ -35,30 +38,34 @@ public record ItemPlacePayload(BlockPos pos, BlockHitResult hitResult) implement
     public @NotNull Type<? extends CustomPacketPayload> type() {
         return TYPE;
     }
+    #endif
 
     public static void receive(Player player, BlockPos pos, BlockHitResult hitResult) {
         ItemStack stack = player.getMainHandItem();
         if (stack == ItemStack.EMPTY) return;
 
-        Level level = player.level();
+        Level level = player #if MC_VER < V1_20_1 .level #else .level() #endif;
         BlockPos tempPos = pos;
-        if (level.getBlockState(pos).getBlock() != Ipla.lItemBlock.get()) {
+
+        if (level.getBlockState(pos).getBlock() != Ipla.lItemBlock) {
             tempPos = pos.relative(hitResult.getDirection(), 1);
         }
 
         Block replBlock = level.getBlockState(tempPos).getBlock();
         int i = hitResult.getDirection().get3DDataValue();
+
         Random random = new Random();
 
         if (replBlock == Blocks.AIR || replBlock == Blocks.WATER) {
-            BlockState state = Ipla.lItemBlock.get().defaultBlockState();
+            BlockState state = Ipla.lItemBlock.defaultBlockState();
 
             if (replBlock == Blocks.WATER) {
                 state = state.setValue(BlockStateProperties.WATERLOGGED, true);
             }
 
             level.setBlockAndUpdate(tempPos, state);
-            LayingItemEntity entity = (LayingItemEntity)level.getBlockEntity(tempPos);
+
+            LayingItemEntity entity = (LayingItemEntity)level#if MC_VER < V1_21 .getChunk(tempPos) #endif.getBlockEntity(tempPos);
 
             if (entity != null) {
                 if (player.isDiscrete()) {
@@ -74,12 +81,12 @@ public record ItemPlacePayload(BlockPos pos, BlockHitResult hitResult) implement
                     entity.rot.set(i * 4, random.nextFloat(-360, 360));
                 }
 
-                level.playSeededSound(null, pos.getX(), pos.getY(), pos.getZ(), SoundEvents.PAINTING_PLACE, SoundSource.BLOCKS, 1, 1.4f, 1);
+                level.playSound(null, pos.getX(), pos.getY(), pos.getZ(), SoundEvents.PAINTING_PLACE, SoundSource.BLOCKS, 1, 1.4f);
 
                 entity.markDirty();
             }
-        } else if (level.getBlockState(tempPos).getBlock() == Ipla.lItemBlock.get()) {
-            LayingItemEntity entity = (LayingItemEntity)level.getBlockEntity(tempPos);
+        } else if (level.getBlockState(tempPos).getBlock() == Ipla.lItemBlock) {
+            LayingItemEntity entity = (LayingItemEntity)level#if MC_VER < V1_21 .getChunk(tempPos) #endif.getBlockEntity(tempPos);
 
             if (entity != null) {
                 boolean hitIsLItem = tempPos != pos;
@@ -96,7 +103,7 @@ public record ItemPlacePayload(BlockPos pos, BlockHitResult hitResult) implement
                     if (quad)
                         entity.quad.set(pair.getFirst(), true);
 
-                    level.playSeededSound(null, pos.getX(), pos.getY(), pos.getZ(), SoundEvents.PAINTING_PLACE, SoundSource.BLOCKS, 1, 1.4f, 1);
+                    level.playSound(null, pos.getX(), pos.getY(), pos.getZ(), SoundEvents.PAINTING_PLACE, SoundSource.BLOCKS, 1, 1.4f);
                 }
 
                 entity.markDirty();
@@ -104,4 +111,4 @@ public record ItemPlacePayload(BlockPos pos, BlockHitResult hitResult) implement
         }
     }
 }
-#endif
+

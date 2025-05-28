@@ -36,13 +36,13 @@ public class IplaConfig #if  MC_VER > V1_18_2 && MC_VER < V1_20_4 extends Midnig
             .build();
 
     @SerialEntry
-    public boolean oldRendering;
+    public boolean oldRendering = false;
     @SerialEntry
-    public float absSize;
+    public float absSize = 1.0f;
     @SerialEntry
-    public float iSize;
+    public float iSize = 1.0f;
     @SerialEntry
-    public float bSize;
+    public float bSize = 0.75f;
 
     public Screen getScreen(Screen parentScreen) {
         return YetAnotherConfigLib.createBuilder()

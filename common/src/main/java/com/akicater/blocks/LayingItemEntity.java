@@ -8,10 +8,14 @@ import net.minecraft.core.HolderLookup;
 #endif
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.world.Container;
 import net.minecraft.world.ContainerHelper;
+import net.minecraft.world.Containers;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -35,7 +39,7 @@ public class LayingItemEntity extends BlockEntity {
 
 
     public LayingItemEntity(BlockPos pos, BlockState blockState) {
-        super(Ipla.lItemBlockEntity.get(), pos, blockState);
+        super(Ipla.lItemBlockEntity #if MC_VER < V1_21_3 .get() #endif, pos, blockState);
 
         inv = NonNullList.withSize(24, ItemStack.EMPTY);
 
@@ -49,14 +53,15 @@ public class LayingItemEntity extends BlockEntity {
     // Load nbt data shit
     #if MC_VER >= V1_21 protected #else public #endif void #if MC_VER >= V1_21 loadAdditional #else load #endif(CompoundTag compoundTag#if MC_VER >= V1_21 , HolderLookup.Provider provider#endif) {
         #if MC_VER >= V1_21 super.loadAdditional(compoundTag, provider); #else super.load(compoundTag); #endif
+        this.inv.clear();
         ContainerHelper.loadAllItems(compoundTag, this.inv #if MC_VER >= V1_21 , provider #endif);
 
         for (int i = 0; i < 6; i++) {
-            quad.set(i, compoundTag.getBoolean("s" + i));
+            quad.set(i, compoundTag.getBoolean("s" + i).get());
         }
 
         for (int i = 0; i < 24; i++) {
-            rot.set(i, compoundTag.getFloat("r" + i));
+            rot.set(i, compoundTag.getFloat("r" + i).get());
         }
     }
 
@@ -91,7 +96,11 @@ public class LayingItemEntity extends BlockEntity {
     }
 
     public @NotNull CompoundTag getUpdateTag(#if MC_VER >= V1_21 HolderLookup.Provider provider #endif) {
-        return #if MC_VER < V1_18_2 this.save(new CompoundTag()) #elif MC_VER >= V1_21 this.saveCustomOnly(provider) #else this.saveWithoutMetadata() #endif;
+        CompoundTag compoundTag = #if MC_VER < V1_18_2 this.save(new CompoundTag()) #elif MC_VER >= V1_21 this.saveCustomOnly(provider) #else this.saveWithoutMetadata() #endif;
+
+        ContainerHelper.saveAllItems(compoundTag, this.inv #if MC_VER >= V1_21 , provider #endif);
+
+        return compoundTag;
     }
 
 
@@ -151,5 +160,32 @@ public class LayingItemEntity extends BlockEntity {
     public void markDirty() {
         this.setChanged();
         this.getLevel().sendBlockUpdated(this.getBlockPos(), this.getBlockState(), this.getBlockState(), 3);
+
     }
+    public void markDirty(@Nullable Entity entity) {
+        this.level.gameEvent(GameEvent.BLOCK_CHANGE, this.getBlockPos(), GameEvent.Context.of(entity, this.getBlockState()));
+        this.markDirty();
+    }
+
+    #if MC_VER
+    public void preRemoveSideEffects(BlockPos pos, BlockState state) {
+        LayingItemEntity entity = (LayingItemEntity) level.getBlockEntity(pos);
+        if (entity != null) {
+            if (!entity.isEmpty()) {
+                for(int i = 0; i < 24; ++i) {
+                    ItemStack itemStack = entity.inv.get(i);
+                    if (!itemStack.isEmpty()) {
+                        Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), itemStack);
+                    }
+                }
+
+                entity.inv.clear();
+                entity.setRemoved();
+
+                level.updateNeighbourForOutputSignal(pos, state.getBlock());
+            }
+        }
+        super.preRemoveSideEffects(pos, state);
+    }
+    #endif
 }

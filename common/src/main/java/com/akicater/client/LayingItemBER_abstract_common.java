@@ -59,13 +59,14 @@ public abstract class LayingItemBER_abstract_common implements BlockEntityRender
 
     public static Vec3 pos1 = new Vec3(0.5F, 0.5F, 0);
 
-    public void render(LayingItemEntity entity, float partialTick, PoseStack poseStack, MultiBufferSource buffer, int packedLight, int packedOverlay, float itemSize, float blockSize, float absoluteSize, boolean oldRendering) {
+    public void render(#if MC_VER < V1_21_5 LayingItemEntity entity, float partialTick, PoseStack poseStack, MultiBufferSource buffer, int packedLight, int packedOverlay, #else LayingItemEntity entity, float partialTick, PoseStack poseStack, MultiBufferSource buffer, int packedLight, int packedOverlay, Vec3 cameraPos, #endif float itemSize, float blockSize, float absoluteSize, boolean oldRendering, float dt) {
         ItemRenderer itemRenderer = Minecraft.getInstance().getItemRenderer();
 
         for (int s = 0; s < 6; s++) {
             if (entity.quad.get(s)) {
                 float iSize = itemSize * absoluteSize / 2;
                 float bSize = blockSize * absoluteSize / 2;
+
                 for (int i = 0; i < 4; i++) {
                     if (!entity.inv.get(s * 4 + i).isEmpty()) {
                         ItemStack stack = entity.inv.get(s * 4 + i);
@@ -73,7 +74,7 @@ public abstract class LayingItemBER_abstract_common implements BlockEntityRender
                         poseStack.pushPose();
 
                         boolean fullBlock = stack.getItem() instanceof BlockItem && ((BlockItem) stack.getItem()).getBlock().defaultBlockState().isCollisionShapeFullBlock(entity.getLevel(), entity.getBlockPos());
-                        manipStack(poseStack, entity, fullBlock, oldRendering, bSize, iSize, s, i);
+                        manipStack(poseStack, entity, fullBlock, oldRendering, iSize, bSize, s, i, dt);
 
                         if ((fullBlock)) {
                             poseStack.scale(bSize, bSize, bSize);
@@ -96,7 +97,7 @@ public abstract class LayingItemBER_abstract_common implements BlockEntityRender
                     poseStack.pushPose();
 
                     boolean fullBlock = stack.getItem() instanceof BlockItem && ((BlockItem) stack.getItem()).getBlock().defaultBlockState().isCollisionShapeFullBlock(entity.getLevel(), entity.getBlockPos());
-                    manipStack(poseStack, entity, fullBlock, oldRendering, iSize, bSize, s, 4);
+                    manipStack(poseStack, entity, fullBlock, oldRendering, iSize, bSize, s, 4, dt);
 
                     if ((fullBlock)) {
                         poseStack.scale(bSize, bSize, bSize);
@@ -116,7 +117,7 @@ public abstract class LayingItemBER_abstract_common implements BlockEntityRender
         return a * (1.0f - f) + (b * f);
     }
 
-    public void manipStack(PoseStack poseStack, LayingItemEntity entity, boolean fullBlock, boolean oldRendering, float iSize, float bSize, int s, int i) {
+    public void manipStack(PoseStack poseStack, LayingItemEntity entity, boolean fullBlock, boolean oldRendering, float iSize, float bSize, int s, int i, float dt) {
         poseStack.translate(0.5, 0.5, 0.5);
 
         poseStack.mulPose(rot.get(s));
@@ -124,7 +125,7 @@ public abstract class LayingItemBER_abstract_common implements BlockEntityRender
         boolean quad = i < 4;
         int x = s * 4 + ((quad) ? i : 0);
 
-        float rotation = #if MC_VER >= V1_19_4 Math.lerp #else lerp #endif(entity.lastRot.get(x), entity.rot.get(x), 0.1f);
+        float rotation = #if MC_VER >= V1_19_4 Math.lerp #else lerp #endif(entity.lastRot.get(x), entity.rot.get(x), 0.1f * dt);
 
         if (fullBlock && !oldRendering) {
             poseStack.translate(-0.5, -0.5, -0.5);
@@ -146,9 +147,9 @@ public abstract class LayingItemBER_abstract_common implements BlockEntityRender
             poseStack.translate(-0.5, -0.5, -0.5);
 
             if (quad) {
-                poseStack.translate(0.25f + (((i + 1) % 2 == 0) ? 0.5f : 0), 0.25f + ((i > 1) ? 0.5f : 0), 0.025f);
+                poseStack.translate(0.25f + (((i + 1) % 2 == 0) ? 0.5f : 0), 0.25f + ((i > 1) ? 0.5f : 0), 0.03125f * iSize);
             } else {
-                poseStack.translate(pos1.x, pos1.y, 0.025f);
+                poseStack.translate(pos1.x, pos1.y, 0.03125f * iSize);
             }
 
             #if MC_VER >= V1_19_4
@@ -163,6 +164,10 @@ public abstract class LayingItemBER_abstract_common implements BlockEntityRender
         entity.lastRot.set(x, rotation);
     }
 
-    public abstract void render(LayingItemEntity entity, float partialTick, PoseStack poseStack, MultiBufferSource buffer, int packedLight, int packedOverlay);
+    public abstract void #if MC_VER < V1_21_5
+                         render(LayingItemEntity entity, float partialTick, PoseStack poseStack, MultiBufferSource buffer, int packedLight, int packedOverlay)
+                         #else
+                         render(LayingItemEntity entity, float partialTick, PoseStack poseStack, MultiBufferSource buffer, int packedLight, int packedOverlay, Vec3 cameraPos);
+                         #endif
 }
 

@@ -5,27 +5,28 @@ import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+
 import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
-import net.minecraft.world.level.BlockGetter;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelAccessor;
-import net.minecraft.world.level.block.BaseEntityBlock;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.EntityBlock;
-import net.minecraft.world.level.block.SimpleWaterloggedBlock;
+import net.minecraft.world.level.*;
+
+import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.Half;
 import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.level.block.state.properties.StairsShape;
+import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.phys.BlockHitResult;
@@ -33,6 +34,14 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.logging.Logger;
+
+#if MC_VER > V1_21
+import net.minecraft.util.RandomSource;
+
+import static com.akicater.Ipla.MOD_ID;
+#endif
 
 public class LayingItem extends BaseEntityBlock implements SimpleWaterloggedBlock {
     #if MC_VER > V1_20_1 public static final MapCodec<LayingItem> CODEC = simpleCodec(LayingItem::new); #endif
@@ -43,14 +52,32 @@ public class LayingItem extends BaseEntityBlock implements SimpleWaterloggedBloc
         this.registerDefaultState(this.stateDefinition.any().setValue(WATERLOGGED, false));
     }
 
+    #if MC_VER <= V1_21_3
     @Override
-    public @NotNull BlockState updateShape(BlockState state, Direction direction, BlockState neighborState, LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
+    public @NotNull BlockState updateShape(BlockState state, LevelReader level, ScheduledTickAccess scheduledTickAccess, BlockPos pos, Direction direction, BlockPos neighborPos, BlockState neighborState, RandomSource random)  {
         if (state.getValue(WATERLOGGED)) {
-            level.scheduleTick(pos, Fluids.WATER, Fluids.WATER.getTickDelay(level));
+            scheduledTickAccess.scheduleTick(pos, Fluids.WATER, Fluids.WATER.getTickDelay(level));
         }
 
-        return super.updateShape(state, direction, neighborState, level, pos, neighborPos);
+        return super.updateShape(state, level, scheduledTickAccess, pos, direction, neighborPos, neighborState, random);
     }
+    #else
+    @Override
+    public @NotNull BlockState updateShape(BlockState blockState, LevelReader levelReader, ScheduledTickAccess scheduledTickAccess, BlockPos blockPos, Direction direction, BlockPos arg6, BlockState arg7, RandomSource arg8) {
+        if (blockState.getValue(WATERLOGGED)) {
+            scheduledTickAccess.scheduleTick(blockPos, Fluids.WATER, Fluids.WATER.getTickDelay(levelReader));
+        }
+
+        return super.updateShape(blockState, levelReader, scheduledTickAccess, blockPos, direction, arg6, arg7, arg8);
+    }
+    #endif
+
+    #if MC_VER >= V1_21_4
+    protected @NotNull RenderShape getRenderShape(BlockState state) {
+        return RenderShape.INVISIBLE;
+    }
+    #endif
+
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
@@ -91,8 +118,9 @@ public class LayingItem extends BaseEntityBlock implements SimpleWaterloggedBloc
     }
 
     // Drop items on break
+    #if MC_VER < V1_21_5
     @Override
-    #if MC_VER >= V1_21 protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) #else public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) #endif {
+    #if MC_VER >= V1_21  protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) #else public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) #endif {
         if (!state.is(newState.getBlock())) {
             LayingItemEntity entity = (LayingItemEntity) level#if MC_VER < V1_21 .getChunk(pos) #endif.getBlockEntity(pos);
             if (entity != null) {
@@ -110,10 +138,14 @@ public class LayingItem extends BaseEntityBlock implements SimpleWaterloggedBloc
                     level.updateNeighbourForOutputSignal(pos, this);
                 }
             }
-
+            #if MC_VER >= V1_21_5
             super.onRemove(state, level, pos, newState, movedByPiston);
+            #else
+            super.onRemove(state, level, pos, newState, movedByPiston);
+            #endif
         }
     }
+    #endif
 
     @Override
     #if MC_VER >= V1_21 protected @NotNull InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) #else public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) #endif {
@@ -127,22 +159,29 @@ public class LayingItem extends BaseEntityBlock implements SimpleWaterloggedBloc
             if (!entity.quad.get(s)) i = 0;
             if (entity.inv.get(s * 4 + i).isEmpty()) return InteractionResult.FAIL;
 
-            player.addItem(entity.inv.get(s * 4 + i));
-            entity.inv.set(s * 4 + i, ItemStack.EMPTY);
+            ItemStack itemStack = entity.inv.get(s * 4 + i).copy();
+            boolean success = player.addItem(itemStack);
 
-            level.playSound(null, pos.getX(), pos.getY(), pos.getZ(), #if MC_VER >= V1_18_2 SoundEvents.BUNDLE_REMOVE_ONE #else SoundEvents.DISPENSER_FAIL #endif , SoundSource.BLOCKS, 1, 1.4f);
+            if (success && itemStack.isEmpty()) {
+                entity.inv.set(s * 4 + i, ItemStack.EMPTY);
+                entity.markDirty(player);
+                level.playSound(null, pos.getX(), pos.getY(), pos.getZ(), #if MC_VER >= V1_18_2 SoundEvents.BUNDLE_REMOVE_ONE #else SoundEvents.DISPENSER_FAIL #endif , SoundSource.BLOCKS, 1, 1.4f);
 
-            if (entity.isEmpty()) {
-                level.removeBlock(pos, false);
-                entity.setRemoved();
-            } else if (entity.isSlotEmpty(s)) {
-                entity.quad.set(s, false);
-                entity.markDirty();
+                if (entity.isEmpty()) {
+                    level.removeBlock(pos, false);
+                    entity.setRemoved();
+                } else if (entity.isSlotEmpty(s)) {
+                    entity.quad.set(s, false);
+                }
+
+                entity.markDirty(player);
+
+                return InteractionResult.SUCCESS;
+            } else {
+                return InteractionResult.PASS;
             }
-
-            return InteractionResult.SUCCESS;
         } else {
-            return InteractionResult.FAIL;
+            return InteractionResult.PASS;
         }
     }
 }
