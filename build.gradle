@@ -1,8 +1,10 @@
 plugins {
-    id 'dev.architectury.loom' version '1.7-SNAPSHOT' apply false
+    id 'dev.architectury.loom' version '1.10-SNAPSHOT' apply false
     id 'architectury-plugin' version '3.4-SNAPSHOT'
 
-    id 'com.github.johnrengelman.shadow' version '8.1.1' apply false
+    id 'com.gradleup.shadow' version '8.3.6' apply false
+    //id 'com.github.johnrengelman.shadow' version '8.1.1' apply false
+
     id 'systems.manifold.manifold-gradle-plugin' version '0.0.2-alpha'
 
     id "com.matthewprenger.cursegradle" version "1.4.0" apply false
@@ -42,6 +44,9 @@ subprojects {
             name = 'ParchmentMC'
             url = 'https://maven.parchmentmc.org'
         }
+
+        maven { url "https://maven.shedaniel.me/" }
+        maven { url = 'https://maven.architectury.dev/' }
     }
 
     configurations {
@@ -52,7 +57,7 @@ subprojects {
         silentMojangMappingsLicense()
     }
 
-    java {
+    /java {
         withSourcesJar()
 
         toolchain {
@@ -64,6 +69,25 @@ subprojects {
                 vendor = JvmVendorSpec.ADOPTIUM
             }
         }
+    }/
+
+    java {
+        // Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
+        // if it is present.
+        // If you remove this line, sources will not be generated.
+        withSourcesJar()
+        if (project.java_version == "17") {
+            sourceCompatibility = JavaVersion.VERSION_17
+            targetCompatibility = JavaVersion.VERSION_17
+        } else {
+            sourceCompatibility = JavaVersion.VERSION_21
+            targetCompatibility = JavaVersion.VERSION_21
+        }
+
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        it.options.release = project.java_version as Integer
     }
 
     processResources {
@@ -74,7 +98,7 @@ subprojects {
                 architectury_api_version : project.architectury_api_version,
                 java : project.java_version,
                 name : "Ipla",
-                modid : archives_name,
+                modid : project.archives_name,
                 description : "Mod that lets you place items on any block side",
                 authors : "akicater",
                 license : "MIT",
@@ -112,14 +136,14 @@ subprojects {
 
         mappings loom.layered() {
             officialMojangMappings()
-            parchment("org.parchmentmc.data:parchment-1.21:2024.07.28@zip")
+            parchment("org.parchmentmc.data:parchment-${rootProject.minecraft_version}:${rootProject.parchment}@zip")
         }
     }
 
     def loader = project.name
 
     modrinth {
-        token = "mrp_h7QqmzyBcHEp9YQs2aSooWNmgePhkgjRrjrRf6azlcUUlSKK5MHYqnb2JWXx"
+        token = ""
         projectId = "ipla"
         versionName = archives_name + " " + mod_version
         versionNumber = mod_version
@@ -147,7 +171,7 @@ subprojects {
     }
 
     curseforge {
-        apiKey = "e665bc7e-937b-4f49-a957-badb4d7fb894"
+        apiKey = ""
 
         project {
             id = "1124962"
