@@ -12,8 +12,13 @@
 /forge/build/
 /forge/run/
 
+/neoforge/.gradle/
+/neoforge/build/
+/neoforge/run/
+
 /buildAllJars/
 
 /build/
 
 /.idea/
+
