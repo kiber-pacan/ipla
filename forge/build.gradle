@@ -1,5 +1,5 @@
 plugins {
-    id 'com.github.johnrengelman.shadow'
+    id 'com.gradleup.shadow' version '8.3.6'
 }
 
 loom {
@@ -31,6 +31,10 @@ configurations {
         canBeResolved = true
         canBeConsumed = false
     }
+}
+
+loom {
+    accessWidenerPath = project(":common").loom.accessWidenerPath
 }
 
 repositories {
