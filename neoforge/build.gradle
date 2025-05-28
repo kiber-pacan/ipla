@@ -39,10 +39,6 @@ repositories {
     }
 }
 
-loom {
-    accessWidenerPath = project(":common").loom.accessWidenerPath
-}
-
 dependencies {
     neoForge "net.neoforged:neoforge:${rootProject.neoforge_version}"
 

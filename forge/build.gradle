@@ -33,10 +33,6 @@ configurations {
     }
 }
 
-loom {
-    accessWidenerPath = project(":common").loom.accessWidenerPath
-}
-
 repositories {
     maven {
         name 'Xander Maven'
