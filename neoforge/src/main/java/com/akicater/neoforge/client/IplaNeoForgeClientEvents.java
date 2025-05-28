@@ -18,7 +18,8 @@ import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 public class IplaNeoForgeClientEvents {
     @SubscribeEvent
     public static void registerEntityRenderers(EntityRenderersEvent.RegisterRenderers event) {
-        event.registerBlockEntityRenderer(IplaNeoForge.layingItemEntity.get() #if MC_VER < V1_21_3 .get() #endif,
+
+        event.registerBlockEntityRenderer(#if MC_VER >= V1_21_3 IplaNeoForge.layingItemEntity.get() #else Ipla.lItemBlockEntity.get() #endif,
                 LayingItemBER_common::new
         );
     }

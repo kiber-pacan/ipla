@@ -23,6 +23,10 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 #endif
 
+#if MC_VER == V1_20_4
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+#endif
+
 #if MC_VER >= V1_20_4
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.registries.DeferredBlock;
@@ -72,10 +76,10 @@ public final class IplaNeoForge {
     }
 
     private void onCommonSetup(final FMLCommonSetupEvent event) {
-        Ipla.LOGGER.info("Ipla Neoforge Common Setup");
-
+        #if MC_VER >= V1_21_3
         Ipla.lItemBlock = layingItemBlock.get();
         Ipla.lItemBlockEntity = layingItemEntity.get();
+        #endif
 
         Ipla.initializeServer();
 
