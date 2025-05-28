@@ -12,7 +12,7 @@ public final class IplaFabricClient implements ClientModInitializer {
     public void onInitializeClient() {
         Ipla.initializeClient();
         #if MC_VER >= V1_19_2
-        BlockEntityRenderers.register(Ipla.lItemBlockEntity.get(), LayingItemBER_common::new);
+        BlockEntityRenderers.register(Ipla.lItemBlockEntity #if MC_VER < V1_21_3 .get() #endif, LayingItemBER_common::new);
         #else
         BlockEntityRendererRegistry.register(Ipla.lItemBlockEntity.get(), LayingItemBER_common::new);
         #endif

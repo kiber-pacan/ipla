@@ -1,5 +1,6 @@
 package com.akicater.fabric.client;
 
+
 import com.akicater.Ipla;
 import com.akicater.client.IplaConfig;
 import com.terraformersmc.modmenu.api.ConfigScreenFactory;
@@ -18,7 +19,7 @@ public class ModMenuIntegration implements ModMenuApi {
         #if MC_VER >= V1_20_4
         return screen -> IplaConfig.HANDLER.instance().getScreen(screen);
         #elif MC_VER < V1_20_4 && MC_VER > V1_18_2
-            return screen -> MidnightConfig.getScreen(screen, Ipla.MOD_ID);
+        return screen -> MidnightConfig.getScreen(screen, Ipla.MOD_ID);
         #elif  MC_VER <= V1_18_2
         return screen -> AutoConfig.getConfigScreen(IplaConfig.class, screen).get();
         #endif
