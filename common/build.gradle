@@ -12,7 +12,9 @@ repositories {
 }
 
 loom {
-    accessWidenerPath = file("src/main/resources/ipla.accesswidener")
+    if (project.index as Integer >= 9) {
+        accessWidenerPath = file("src/main/resources/ipla.accesswidener")
+    }
 }
 
 dependencies {
