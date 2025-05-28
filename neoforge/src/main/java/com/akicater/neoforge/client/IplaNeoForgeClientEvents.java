@@ -3,6 +3,7 @@ package com.akicater.neoforge.client;
 import com.akicater.Ipla;
 import com.akicater.client.IplaConfig;
 import com.akicater.client.LayingItemBER_common;
+import com.akicater.neoforge.IplaNeoForge;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 #if MC_VER >= V1_21
@@ -17,7 +18,7 @@ import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 public class IplaNeoForgeClientEvents {
     @SubscribeEvent
     public static void registerEntityRenderers(EntityRenderersEvent.RegisterRenderers event) {
-        event.registerBlockEntityRenderer(Ipla.lItemBlockEntity.get(),
+        event.registerBlockEntityRenderer(IplaNeoForge.layingItemEntity.get() #if MC_VER < V1_21_3 .get() #endif,
                 LayingItemBER_common::new
         );
     }
