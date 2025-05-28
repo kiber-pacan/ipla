@@ -121,14 +121,12 @@ public final class Ipla {
                             .setId(key)
                         #endif
                     )).get();
-            LOGGER.info("Block registered: " + lItemBlock);
-
         #if MC_VER >= V1_21_3
             lItemBlockEntity = BlockEntityType.register("l_item_entity", LayingItemEntity::new, lItemBlock);
         #else
         lItemBlockEntity = blockEntities.register(
                 #if MC_VER >= V1_21 ResourceLocation.fromNamespaceAndPath #else new ResourceLocation #endif(MOD_ID, "l_item_entity"),
-                () -> BlockEntityType.Builder.of(LayingItemEntity::new, lItemBlock.get()).build(null)
+                () -> BlockEntityType.Builder.of(LayingItemEntity::new, lItemBlock).build(null)
         );
         #endif
             #if MC_VER >= V1_21_3 } #endif
@@ -224,7 +222,6 @@ public final class Ipla {
 
                     NetworkManager.sendToServer(ITEM_ROTATE, buf);
 
-                    //LOGGER.info("DWD");
                     #else
                         ItemRotatePayload payload = new ItemRotatePayload(
                                 RANDOM.nextFloat(18, 22),
