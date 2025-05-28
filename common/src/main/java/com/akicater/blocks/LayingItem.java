@@ -5,7 +5,9 @@ import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+#if MC_VER >= V1_19_4
 import net.minecraft.core.registries.Registries;
+#endif
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
@@ -22,10 +24,7 @@ import net.minecraft.world.level.*;
 import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
-import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.level.block.state.properties.Half;
-import net.minecraft.world.level.block.state.properties.Property;
-import net.minecraft.world.level.block.state.properties.StairsShape;
+import net.minecraft.world.level.block.state.properties.*;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
@@ -52,14 +51,14 @@ public class LayingItem extends BaseEntityBlock implements SimpleWaterloggedBloc
         this.registerDefaultState(this.stateDefinition.any().setValue(WATERLOGGED, false));
     }
 
-    #if MC_VER <= V1_21_3
+    #if MC_VER < V1_21_3
     @Override
-    public @NotNull BlockState updateShape(BlockState state, LevelReader level, ScheduledTickAccess scheduledTickAccess, BlockPos pos, Direction direction, BlockPos neighborPos, BlockState neighborState, RandomSource random)  {
+    public @NotNull BlockState updateShape(BlockState state, Direction direction, BlockState neighborState, LevelAccessor level, BlockPos pos, BlockPos neighborPos)  {
         if (state.getValue(WATERLOGGED)) {
-            scheduledTickAccess.scheduleTick(pos, Fluids.WATER, Fluids.WATER.getTickDelay(level));
+            level #if MC_VER <= V1_17_1 .getLiquidTicks() #endif.scheduleTick(pos, Fluids.WATER, Fluids.WATER.getTickDelay(level));
         }
 
-        return super.updateShape(state, level, scheduledTickAccess, pos, direction, neighborPos, neighborState, random);
+        return super.updateShape(state, direction, neighborState, level, pos,  neighborPos);
     }
     #else
     @Override
@@ -183,6 +182,10 @@ public class LayingItem extends BaseEntityBlock implements SimpleWaterloggedBloc
         } else {
             return InteractionResult.PASS;
         }
+    }
+
+    static {
+        WATERLOGGED = BlockStateProperties.WATERLOGGED;
     }
 }
 

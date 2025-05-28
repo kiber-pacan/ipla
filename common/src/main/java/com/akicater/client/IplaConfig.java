@@ -25,7 +25,7 @@ import me.shedaniel.autoconfig.annotation.Config;
 #endif
 
 #if MC_VER <= V1_18_2 @Config(name = Ipla.MOD_ID) #endif
-public class IplaConfig #if  MC_VER > V1_18_2 && MC_VER < V1_20_4 extends MidnightConfig #elif MC_VER <= V1_18_2 implements ConfigData #endif{
+public class IplaConfig#if  MC_VER >= V1_19_2 && MC_VER < V1_20_4 extends MidnightConfig #elif MC_VER <= V1_18_2 implements ConfigData #endif{
     #if MC_VER >= V1_20_4
     public static ConfigClassHandler<IplaConfig> HANDLER = ConfigClassHandler.createBuilder(IplaConfig.class)
             .id(#if MC_VER >= V1_21 ResourceLocation.fromNamespaceAndPath #else new ResourceLocation #endif(Ipla.MOD_ID, "ipla_config"))
@@ -84,8 +84,9 @@ public class IplaConfig #if  MC_VER > V1_18_2 && MC_VER < V1_20_4 extends Midnig
                         .build())
                 .build().generateScreen(parentScreen);
     }
-    #elif MC_VER > V1_18_2
-    #if MC_VER > V1_19_2 public static final String MAIN_CATEGORY = "text"; #endif
+    #elif MC_VER >= V1_19_2
+
+    #if MC_VER >= V1_19_2 public static final String MAIN_CATEGORY = "text"; #endif
 
     @MidnightConfig.Entry(#if MC_VER > V1_19_2 category = MAIN_CATEGORY #endif)
     public static boolean oldRendering = false;

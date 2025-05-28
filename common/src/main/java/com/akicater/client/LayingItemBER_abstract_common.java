@@ -165,7 +165,7 @@ public abstract class LayingItemBER_abstract_common implements BlockEntityRender
     }
 
     public abstract void #if MC_VER < V1_21_5
-                         render(LayingItemEntity entity, float partialTick, PoseStack poseStack, MultiBufferSource buffer, int packedLight, int packedOverlay)
+                         render(LayingItemEntity entity, float partialTick, PoseStack poseStack, MultiBufferSource buffer, int packedLight, int packedOverlay);
                          #else
                          render(LayingItemEntity entity, float partialTick, PoseStack poseStack, MultiBufferSource buffer, int packedLight, int packedOverlay, Vec3 cameraPos);
                          #endif

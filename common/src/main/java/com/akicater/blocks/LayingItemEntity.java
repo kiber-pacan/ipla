@@ -57,11 +57,11 @@ public class LayingItemEntity extends BlockEntity {
         ContainerHelper.loadAllItems(compoundTag, this.inv #if MC_VER >= V1_21 , provider #endif);
 
         for (int i = 0; i < 6; i++) {
-            quad.set(i, compoundTag.getBoolean("s" + i).get());
+            quad.set(i, compoundTag.getBoolean("s" + i) #if MC_VER >= V1_21_5 .get() #endif);
         }
 
         for (int i = 0; i < 24; i++) {
-            rot.set(i, compoundTag.getFloat("r" + i).get());
+            rot.set(i, compoundTag.getFloat("r" + i) #if MC_VER >= V1_21_5 .get() #endif);
         }
     }
 
@@ -163,11 +163,11 @@ public class LayingItemEntity extends BlockEntity {
 
     }
     public void markDirty(@Nullable Entity entity) {
-        this.level.gameEvent(GameEvent.BLOCK_CHANGE, this.getBlockPos(), GameEvent.Context.of(entity, this.getBlockState()));
+        this.level.gameEvent(GameEvent.BLOCK_CHANGE, this.getBlockPos() #if MC_VER > V1_18_2, GameEvent.Context.of(entity, this.getBlockState()) #endif);
         this.markDirty();
     }
 
-    #if MC_VER
+    #if MC_VER >= V1_21_5
     public void preRemoveSideEffects(BlockPos pos, BlockState state) {
         LayingItemEntity entity = (LayingItemEntity) level.getBlockEntity(pos);
         if (entity != null) {

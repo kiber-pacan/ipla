@@ -59,7 +59,7 @@ public #if MC_VER >= V1_21 record #else class #endif ItemPlacePayload #if MC_VER
         if (replBlock == Blocks.AIR || replBlock == Blocks.WATER) {
             BlockState state = Ipla.lItemBlock.defaultBlockState();
 
-            if (replBlock == Blocks.WATER) {
+            if (replBlock == Blocks.WATER && level.getBlockState(tempPos).getValue(BlockStateProperties.LEVEL) == 0) {
                 state = state.setValue(BlockStateProperties.WATERLOGGED, true);
             }
 
