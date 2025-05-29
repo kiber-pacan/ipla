@@ -47,7 +47,7 @@ public #if MC_VER >= V1_21 record #else class #endif ItemPlacePayload #if MC_VER
         Level level = player #if MC_VER < V1_20_1 .level #else .level() #endif;
         BlockPos tempPos = pos;
 
-        if (level.getBlockState(pos).getBlock() != Ipla.lItemBlock) {
+        if (level.getBlockState(pos).getBlock() != Ipla.lItemBlock #if MC_VER < V1_21_3 .get() #endif) {
             tempPos = pos.relative(hitResult.getDirection(), 1);
         }
 
@@ -57,7 +57,7 @@ public #if MC_VER >= V1_21 record #else class #endif ItemPlacePayload #if MC_VER
         Random random = new Random();
 
         if (replBlock == Blocks.AIR || replBlock == Blocks.WATER) {
-            BlockState state = Ipla.lItemBlock.defaultBlockState();
+            BlockState state = Ipla.lItemBlock #if MC_VER < V1_21_3 .get() #endif.defaultBlockState();
 
             if (replBlock == Blocks.WATER && level.getBlockState(tempPos).getValue(BlockStateProperties.LEVEL) == 0) {
                 state = state.setValue(BlockStateProperties.WATERLOGGED, true);
@@ -85,7 +85,7 @@ public #if MC_VER >= V1_21 record #else class #endif ItemPlacePayload #if MC_VER
 
                 entity.markDirty();
             }
-        } else if (level.getBlockState(tempPos).getBlock() == Ipla.lItemBlock) {
+        } else if (level.getBlockState(tempPos).getBlock() == Ipla.lItemBlock #if MC_VER < V1_21_3 .get() #endif) {
             LayingItemEntity entity = (LayingItemEntity)level#if MC_VER < V1_21 .getChunk(tempPos) #endif.getBlockEntity(tempPos);
 
             if (entity != null) {

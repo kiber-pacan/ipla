@@ -89,7 +89,7 @@ public final class Ipla {
     public static final Registrar<BlockEntityType<?>> blockEntities = MANAGER.get().get(Registry.BLOCK_ENTITY_TYPE);
     #endif
 
-    public static LayingItem lItemBlock;
+    public static #if MC_VER < V1_21_3 RegistrySupplier<LayingItem> #else LayingItem #endif lItemBlock;
 
     public static #if MC_VER >= V1_21_3 BlockEntityType<LayingItemEntity> #else RegistrySupplier<BlockEntityType<LayingItemEntity>>  #endif lItemBlockEntity;
 
@@ -106,30 +106,24 @@ public final class Ipla {
 
 
     public static void initializeServer() {
-        #if MC_VER >= V1_21_3
-        ResourceKey<Block> key = ResourceKey.create(Registries.BLOCK, #if MC_VER >= V1_21 ResourceLocation.fromNamespaceAndPath #else new ResourceLocation #endif(MOD_ID, "l_item"));
-        #endif
-
-        #if MC_VER >= V1_21_3 if (!Platform.isForgeLike()) { #endif
-            lItemBlock = blocks.register(
+        #if MC_VER < V1_21_3
+        lItemBlock = blocks.register(
                 #if MC_VER >= V1_21 ResourceLocation.fromNamespaceAndPath #else new ResourceLocation #endif(MOD_ID, "l_item"),
-                    () -> new LayingItem(BlockBehaviour.Properties.of(#if MC_VER < V1_20_1 Material.AIR #endif)
-                            .instabreak()
-                            .dynamicShape()
-                            .noOcclusion()
-                            #if MC_VER >= V1_21_3
-                            .setId(key)
+                () -> new LayingItem(BlockBehaviour.Properties.of(#if MC_VER < V1_20_1 Material.AIR #endif)
+                        .instabreak()
+                        .dynamicShape()
+                        .noOcclusion()
+                        #if MC_VER >= V1_21_3
+                        .setId(key)
                         #endif
-                    )).get();
-        #if MC_VER >= V1_21_3
-            lItemBlockEntity = BlockEntityType.register("l_item_entity", LayingItemEntity::new, lItemBlock);
-        #else
+                )
+        );
+
         lItemBlockEntity = blockEntities.register(
                 #if MC_VER >= V1_21 ResourceLocation.fromNamespaceAndPath #else new ResourceLocation #endif(MOD_ID, "l_item_entity"),
-                () -> BlockEntityType.Builder.of(LayingItemEntity::new, lItemBlock).build(null)
+                () -> BlockEntityType.Builder.of(LayingItemEntity::new, lItemBlock.get()).build(null)
         );
         #endif
-            #if MC_VER >= V1_21_3 } #endif
 
         #if MC_VER >= V1_21
         NetworkManager.registerReceiver(NetworkManager.Side.C2S, ItemPlacePayload.TYPE, ItemPlacePayload.CODEC, (buf, context) ->
