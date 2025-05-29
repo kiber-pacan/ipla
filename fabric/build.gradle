@@ -42,12 +42,6 @@ repositories {
     }
 }
 
-loom {
-    if (project.index as Integer >= 9) {
-        accessWidenerPath = project(":common").loom.accessWidenerPath
-    }
-}
-
 dependencies {
     modImplementation "net.fabricmc:fabric-loader:$project.fabric_loader_version"
 
