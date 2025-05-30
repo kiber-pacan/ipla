@@ -70,9 +70,15 @@ public final class IplaNeoForge {
         #if MC_VER >= V1_21_3
         BLOCKS.register(modBus);
         BLOCK_ENTITY_TYPES.register(modBus);
-        #endif
 
         modBus.addListener(this::onCommonSetup);
+        #else
+        Ipla.initializeServer();
+
+        if (FMLEnvironment.dist.isClient()) {
+            Ipla.initializeClient();
+        }
+        #endif
     }
 
     private void onCommonSetup(final FMLCommonSetupEvent event) {
