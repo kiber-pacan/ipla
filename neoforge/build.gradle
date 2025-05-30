@@ -64,7 +64,5 @@ shadowJar {
 }
 
 remapJar {
-    atAccessWideners.add "ipla.accesswidener"
-
     input.set shadowJar.archiveFile
 }
