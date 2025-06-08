@@ -202,10 +202,12 @@ public final class Ipla {
             BlockHitResult hitResult = getBlockHitResult(minecraft.hitResult);
             boolean rounded = false;
 
+
             if (hitResult != null && ROTATE_ITEM_KEY.isDown()) {
                 if (ROTATE_ROUNDED_ITEM_KEY.isDown()) rounded = true;
+                LOGGER.info("WDD");
 
-                if (minecraft.level != null && minecraft.level.getBlockState(hitResult.getBlockPos()).getBlock() == lItemBlock) {
+                if (minecraft.level != null && minecraft.level.getBlockState(hitResult.getBlockPos()).getBlock() == lItemBlock #if MC_VER < V1_21_3 .get() #endif) {
                     #if MC_VER < V1_21
                     FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
 
@@ -223,6 +225,7 @@ public final class Ipla {
                                 rounded,
                                 hitResult
                         );
+
                         NetworkManager.sendToServer(payload);
                     #endif
 
