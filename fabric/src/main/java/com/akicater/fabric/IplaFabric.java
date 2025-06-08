@@ -11,7 +11,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 
-#if MC_VER > V1_21_3
+#if MC_VER >= V1_21_3
 import net.minecraft.core.registries.Registries;
 #endif
 
@@ -19,7 +19,7 @@ public final class IplaFabric implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        #if MC_VER > V1_21_3
+        #if MC_VER >= V1_21_3
         ResourceKey<Block> key = ResourceKey.create(Registries.BLOCK, #if MC_VER >= V1_21 ResourceLocation.fromNamespaceAndPath #else new ResourceLocation #endif(Ipla.MOD_ID, "l_item"));
 
         Ipla.lItemBlock = Ipla.blocks.register(
