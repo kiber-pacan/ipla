@@ -1,24 +1,49 @@
-# Project exclude paths
-/.gradle/
+# gradle
 
-/common/.gradle/
-/common/build/
+*.gradle/
+*build/
+*out/
+*classes/
 
-/fabric/.gradle/
-/fabric/build/
-/fabric/run/
+# eclipse
 
-/forge/.gradle/
-/forge/build/
-/forge/run/
+*.launch
 
-/neoforge/.gradle/
-/neoforge/build/
-/neoforge/run/
+# idea
 
-/buildAllJars/
+.idea/
+*.iml
+*.ipr
+*.iws
 
-/build/
+# vscode
 
-/.idea/
+.settings/
+.vscode/
+bin/
+.classpath
+.project
 
+# macos
+
+*.DS_Store
+
+# fabric
+
+*run/
+
+# java
+
+hs_err_*.log
+replay_*.log
+*.hprof
+*.jfr
+
+buildAllJars/
+
+wrapper/
+
+*.jar
+daemon/
+
+credentials.properties
