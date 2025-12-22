@@ -14,6 +14,10 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
+#if MC_VER >= V1_21_6
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+#endif
 import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -23,6 +27,11 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
+#if MC_VER >= V1_21_5
+import net.minecraft.world.Containers;
+
+#endif
 
 public class LayingItemEntity extends BlockEntity {
     // Inventory
@@ -49,25 +58,25 @@ public class LayingItemEntity extends BlockEntity {
 
 
     // Load nbt data shit
-    #if MC_VER >= V1_21 protected #else public #endif void #if MC_VER >= V1_21 loadAdditional #else load #endif(CompoundTag compoundTag#if MC_VER >= V1_21 , HolderLookup.Provider provider#endif) {
-        #if MC_VER >= V1_21 super.loadAdditional(compoundTag, provider); #else super.load(compoundTag); #endif
+    #if MC_VER >= V1_21 protected #else public #endif void #if MC_VER >= V1_21 loadAdditional #else load #endif(#if MC_VER >= V1_21_6 ValueInput compoundTag #else CompoundTag compoundTag #if MC_VER >= V1_21, HolderLookup.Provider provider #endif #endif) {
+        #if MC_VER >= V1_21 super.loadAdditional(compoundTag #if MC_VER <= V1_21_5, provider #endif); #else super.load(compoundTag); #endif
         this.inv.clear();
-        ContainerHelper.loadAllItems(compoundTag, this.inv #if MC_VER >= V1_21 , provider #endif);
+        ContainerHelper.loadAllItems(compoundTag, this.inv #if MC_VER >= V1_21 && MC_VER <= V1_21_5 , provider #endif);
 
         for (int i = 0; i < 6; i++) {
-            quad.set(i, compoundTag.getBoolean("s" + i) #if MC_VER >= V1_21_5 .get() #endif);
+            quad.set(i, compoundTag #if MC_VER <= V1_21_5 .getBoolean #else .getBooleanOr #endif("s" + i #if MC_VER >= V1_21_6, true #endif) #if MC_VER <= V1_21_5 .get() #endif);
         }
 
         for (int i = 0; i < 24; i++) {
-            rot.set(i, compoundTag.getFloat("r" + i) #if MC_VER >= V1_21_5 .get() #endif);
+            rot.set(i, compoundTag #if MC_VER <= V1_21_5 .getFloat #else .getFloatOr #endif("r" + i #if MC_VER >= V1_21_6, 1.0f #endif) #if MC_VER <= V1_21_5 .get() #endif);
         }
     }
 
     // Save nbt data
-    #if MC_VER >= V1_21 protected #else public @NotNull #endif  #if MC_VER < V1_18_2 CompoundTag save #else void saveAdditional #endif (CompoundTag compoundTag#if MC_VER >= V1_21 , HolderLookup.Provider provider#endif) {
-        super.#if MC_VER < V1_18_2 save #else saveAdditional #endif(compoundTag #if MC_VER >= V1_21 , provider #endif);
+    #if MC_VER >= V1_21 protected #else public @NotNull #endif  #if MC_VER < V1_18_2 CompoundTag save #else void saveAdditional #endif (#if MC_VER >= V1_21_6 ValueOutput compoundTag #else CompoundTag compoundTag #if MC_VER >= V1_21, HolderLookup.Provider provider #endif #endif) {
+        super.#if MC_VER < V1_18_2 save #else saveAdditional #endif(compoundTag #if MC_VER <= V1_21_5 && MC_VER >= V1_21, provider #endif);
 
-        ContainerHelper.saveAllItems(compoundTag, this.inv #if MC_VER >= V1_21 , provider #endif);
+        ContainerHelper.saveAllItems(compoundTag, this.inv #if MC_VER <= V1_21_5 && MC_VER >= V1_21, provider #endif);
 
         for (int i = 0; i < 6; i++) {
             compoundTag.putBoolean("s" + i, quad.get(i));
@@ -93,13 +102,19 @@ public class LayingItemEntity extends BlockEntity {
         #endif
     }
 
+    #if MC_VER >= V1_21_6
+    public @NotNull CompoundTag getUpdateTag(HolderLookup.Provider registries) {
+        return this.saveCustomOnly(registries);
+    }
+    #else
     public @NotNull CompoundTag getUpdateTag(#if MC_VER >= V1_21 HolderLookup.Provider provider #endif) {
         CompoundTag compoundTag = #if MC_VER < V1_18_2 this.save(new CompoundTag()) #elif MC_VER >= V1_21 this.saveCustomOnly(provider) #else this.saveWithoutMetadata() #endif;
 
-        ContainerHelper.saveAllItems(compoundTag, this.inv #if MC_VER >= V1_21 , provider #endif);
+        ContainerHelper.saveAllItems(compoundTag, this.inv #if MC_VER <= V1_21_5 && MC_VER >= V1_21, provider #endif);
 
         return compoundTag;
     }
+    #endif
 
 
     public void setItem(int index, ItemStack stack) {

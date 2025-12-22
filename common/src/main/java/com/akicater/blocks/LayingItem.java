@@ -109,7 +109,7 @@ public class LayingItem extends BaseEntityBlock implements SimpleWaterloggedBloc
     // Drop items on break
     #if MC_VER < V1_21_5
     @Override
-    #if MC_VER >= V1_21  protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) #else public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) #endif {
+    #if MC_VER >= V1_21 protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) #else public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) #endif {
         if (!state.is(newState.getBlock())) {
             LayingItemEntity entity = (LayingItemEntity) level#if MC_VER < V1_21 .getChunk(pos) #endif.getBlockEntity(pos);
             if (entity != null) {

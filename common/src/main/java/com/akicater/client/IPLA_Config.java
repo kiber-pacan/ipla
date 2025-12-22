@@ -62,9 +62,9 @@ public class IPLA_Config {
             }
 
             try {
-                this.blockSize = bSize.orElse(0.75f);
+                this.blockSize = bSize.orElse(1.0f);
             } catch (Exception e) {
-                this.blockSize = 0.75f;
+                this.blockSize = 1.0f;
                 broken = true;
             }
 
@@ -78,15 +78,17 @@ public class IPLA_Config {
             if (broken) saveConfig();
 
         } else {
-            // дефолты
-            this.oldRendering = false;
-            this.absoluteSize = 1.0f;
-            this.itemSize = 1.0f;
-            this.blockSize = 0.75f;
-            this.rotationPower = 1;
-
+            defaultConfig();
             saveConfig();
         }
+    }
+
+    public void defaultConfig() {
+        this.oldRendering = false;
+        this.absoluteSize = 1.0f;
+        this.itemSize = 1.0f;
+        this.blockSize = 1.0f;
+        this.rotationPower = 1;
     }
 
     public void saveConfig() {

@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import com.akicater.blocks.LayingItemEntity;
 
-public abstract class LayingItemBER_abstract_common implements BlockEntityRenderer<LayingItemEntity> {
+public class #if MC_VER >= V1_21_9 LayingItemBER_abstract_common implements BlockEntityRenderer<LayingItemEntity, LayingItemBERS> #else ShelfBER implements BlockEntityRenderer<LayingItemEntity> #endif {
     public LayingItemBER_abstract_common(BlockEntityRendererProvider.Context context) {
 
     }

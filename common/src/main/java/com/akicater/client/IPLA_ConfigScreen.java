@@ -1,17 +1,36 @@
 package com.akicater.client;
 
 import com.akicater.IPLA;
+import com.mojang.blaze3d.vertex.PoseStack;
+#if MC_VER >= V1_20_1
+import net.minecraft.client.gui.GuiGraphics;
+#endif
 import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Checkbox;
-import net.minecraft.client.gui.layouts.*;
+
 import net.minecraft.client.gui.screens.Screen;
+
+
+
+import static com.akicater.IPLA.config;
+
+#if MC_VER >= V1_19_4
+import net.minecraft.client.gui.layouts.*;
+#else
+
+#endif
+
+#if MC_VER >= V1_19_2
 import net.minecraft.network.chat.Component;
+#else
+import net.minecraft.network.chat.TextComponent;
+#endif
 
 public class IPLA_ConfigScreen extends Screen {
     private final Screen parent;
 
-    private static final Component TITLE = Component.literal("IPLA config");
+    private static final #if MC_VER >= V1_19_2 Component #else TextComponent #endif TITLE = #if MC_VER >= V1_19_2 Component.literal #else new TextComponent #endif ("IPLA config");
 
     private float absSize;
     private float iSize;
@@ -19,131 +38,162 @@ public class IPLA_ConfigScreen extends Screen {
     private boolean oldRendering;
     private int rotationPower;
 
-    private final HeaderAndFooterLayout layout = new HeaderAndFooterLayout(this, 61, 33);
-
     public IPLA_ConfigScreen(Screen parent) {
         super(TITLE);
         this.parent = parent;
 
-
-        this.absSize = IPLA.config.absoluteSize;
-        this.iSize = IPLA.config.itemSize;
-        this.bSize = IPLA.config.blockSize;
-        this.oldRendering = IPLA.config.oldRendering;
-        this.rotationPower = IPLA.config.rotationPower;
+        this.absSize = config.absoluteSize;
+        this.iSize = config.itemSize;
+        this.bSize = config.blockSize;
+        this.oldRendering = config.oldRendering;
+        this.rotationPower = config.rotationPower;
     }
 
     @Override
+    public void render(#if MC_VER >= V1_20_1 GuiGraphics x1 #else PoseStack x1 #endif, int mouseX, int mouseY, float delta) {
+        #if MC_VER <= V1_20_4
+        this.renderDirtBackground(#if MC_VER >= V1_19_4 x1 #else 0 #endif);
+        #endif
+        super.render(x1, mouseX, mouseY, delta);
+    }
+
+
+
+    @Override
     protected void init() {
-        LinearLayout header = this.layout.addToHeader(
-                LinearLayout.vertical().spacing(8)
-        );
-
-        GridLayout gridLayout = new GridLayout();
-        gridLayout.defaultCellSetting()
-                .paddingHorizontal(4)
-                .paddingBottom(4)
-                .alignHorizontallyCenter();
-
-        GridLayout.RowHelper row = gridLayout.createRowHelper(1);
-
-        int width = 200;
-        int height = 20;
+        int widthButton = 200;
+        int heightButton = 20;
+        int x = (this.width - widthButton) / 2;
+        int y = 20;
+        int gap = 4;
 
         // Absolute size
-        row.addChild(new AbstractSliderButton(0, 0, width, height,
-                Component.literal("Absolute size"), normalize(absSize)) {
-
+        this.addRenderableWidget(new AbstractSliderButton(x, y, widthButton, heightButton,
+                #if MC_VER >= V1_19_2 Component.literal #else new TextComponent #endif ("Absolute size"), normalize(absSize)) {
             @Override
             protected void updateMessage() {
-                setMessage(Component.literal(
-                        String.format("Absolute size: %.2f", absSize)
-                ));
+                setMessage(#if MC_VER >= V1_19_2 Component.literal #else new TextComponent #endif (String.format("Absolute size: %.2f", absSize)));
             }
 
             @Override
             protected void applyValue() {
                 absSize = denormalize((float) value);
-                IPLA.config.absoluteSize = absSize;
+                config.absoluteSize = absSize;
             }
         });
+        y += heightButton + gap;
 
         // Item size
-        row.addChild(new AbstractSliderButton(0, 0, width, height,
-                Component.literal("Item size"), normalize(iSize)) {
-
+        this.addRenderableWidget(new AbstractSliderButton(x, y, widthButton, heightButton,
+                #if MC_VER >= V1_19_2 Component.literal #else new TextComponent #endif ("Item size"), normalize(iSize)) {
             @Override
             protected void updateMessage() {
-                setMessage(Component.literal(
-                        String.format("Item size: %.2f", iSize)
-                ));
+                setMessage(#if MC_VER >= V1_19_2 Component.literal #else new TextComponent #endif (String.format("Item size: %.2f", iSize)));
             }
 
             @Override
             protected void applyValue() {
                 iSize = denormalize((float) value);
-                IPLA.config.itemSize = iSize;
+                config.itemSize = iSize;
             }
         });
+        y += heightButton + gap;
 
         // Block size
-        row.addChild(new AbstractSliderButton(0, 0, width, height,
-                Component.literal("Block size"), normalize(bSize)) {
-
+        this.addRenderableWidget(new AbstractSliderButton(x, y, widthButton, heightButton,
+                #if MC_VER >= V1_19_2 Component.literal #else new TextComponent #endif ("Block size"), normalize(bSize)) {
             @Override
             protected void updateMessage() {
-                setMessage(Component.literal(
-                        String.format("Block size: %.2f", bSize)
-                ));
+                setMessage(#if MC_VER >= V1_19_2 Component.literal #else new TextComponent #endif (String.format("Block size: %.2f", bSize)));
             }
 
             @Override
             protected void applyValue() {
                 bSize = denormalize((float) value);
-                IPLA.config.blockSize = bSize;
+                config.blockSize = bSize;
             }
         });
+        y += heightButton + gap;
 
-        // Degrees
+        // Rotation power 0..4
         int max = 4;
-        row.addChild(new AbstractSliderButton(0, 0, width, height,
-                Component.literal("Rotation power"), rotationPower / (double) max) {
-
+        this.addRenderableWidget(new AbstractSliderButton(x, y, widthButton, heightButton,
+                #if MC_VER >= V1_19_2 Component.literal #else new TextComponent #endif ("Rotation power"), rotationPower / (double) max) {
             @Override
             protected void updateMessage() {
-                int display = (int) Math.round(value * max); // округляем к int
-                setMessage(Component.literal(
-                        "Rotation power size: " + display
-                ));
+                int display = (int) Math.round(value * max);
+                setMessage(#if MC_VER >= V1_19_2 Component.literal #else new TextComponent #endif ("Rotation power size: " + display));
             }
 
             @Override
             protected void applyValue() {
-                rotationPower = (int) Math.round(value * max); // сохраняем int
-                IPLA.config.rotationPower = rotationPower;   // в конфиг
+                rotationPower = (int) Math.round(value * max);
+                config.rotationPower = rotationPower;
             }
         });
+        y += heightButton + gap;
 
         // Old rendering checkbox
-        row.addChild(
-                Checkbox.builder(Component.literal("Old rendering"), this.font)
-                        .selected(oldRendering)
-                        .onValueChange((cb, value) -> {
-                            oldRendering = value;
-                            IPLA.config.oldRendering = value;
-                        })
+        #if MC_VER >= V1_20_4
+        this.addRenderableWidget(Checkbox.builder(Component.literal("Old rendering"), this.font)
+                #if MC_VER >= V1_21 .maxWidth(width) #endif
+                .selected(oldRendering)
+                .onValueChange((cb, state) -> {
+                    oldRendering = state;
+                    config.saveConfig();
+                })
+                .pos(x, y)
+                .build());
+        #else
+        this.addRenderableWidget(new Checkbox(x, y, widthButton, heightButton,
+                #if MC_VER >= V1_19_2 Component.literal #else new TextComponent #endif ("Old rendering"), oldRendering) {
+            @Override
+            public void onPress() {
+                super.onPress();
+                oldRendering = this.selected();
+                config.oldRendering = oldRendering;
+            }
+        });
+        #endif
+        y += heightButton + gap;
+
+        // Reset
+        #if MC_VER >= V1_19_4
+        this.addRenderableWidget(
+                Button.builder(
+                                #if MC_VER >= V1_19_2 Component.literal #else new TextComponent #endif ("Reset"),
+                                b -> reload()
+                        )
+                        .bounds(x, y, widthButton, heightButton)
                         .build()
         );
+        y += heightButton + gap;
 
-        this.layout.addToContents(gridLayout);
-        this.layout.addToFooter(
-                Button.builder(Component.literal("Done"), b -> this.onClose())
-                        .width(200)
+        // Done button
+        this.addRenderableWidget(
+                Button.builder(
+                                #if MC_VER >= V1_19_2 Component.literal #else new TextComponent #endif ("Done"),
+                                b -> onClose()
+                        )
+                        .bounds(x, y, widthButton, heightButton)
                         .build()
         );
+        #else
+        this.addRenderableWidget(new Button(x, y, widthButton, heightButton, #if MC_VER >= V1_19_2 Component.literal #else new TextComponent #endif ("Reset"), b -> {
+            reload();
+        }));
+        y += heightButton + gap;
 
-        this.layout.visitWidgets(this::addRenderableWidget);
-        this.repositionElements();
+        // Done button
+        this.addRenderableWidget(new Button(x, y, widthButton, heightButton, #if MC_VER >= V1_19_2 Component.literal #else new TextComponent #endif ("Done"), b -> onClose()));
+        #endif
+    }
+
+    private float normalize(float v) {
+        return (v - 0.05f) / (2.0f - 0.05f);
+    }
+    private float denormalize(float v) {
+        return 0.05f + v * (2.0f - 0.05f);
     }
 
     @Override
@@ -152,17 +202,17 @@ public class IPLA_ConfigScreen extends Screen {
         this.minecraft.setScreen(parent);
     }
 
-    @Override
-    protected void repositionElements() {
-        this.layout.arrangeElements();
-    }
+    public void reload() {
+        clearWidgets();
+        config.defaultConfig();
+        config.saveConfig();
 
-    // диапазон 0.05..2.0 -> 0..1
-    private float normalize(float v) {
-        return (v - 0.05f) / (2.0f - 0.05f);
-    }
+        this.absSize = config.absoluteSize;
+        this.iSize = config.itemSize;
+        this.bSize = config.blockSize;
+        this.oldRendering = config.oldRendering;
+        this.rotationPower = config.rotationPower;
 
-    private float denormalize(float v) {
-        return 0.05f + v * (2.0f - 0.05f);
+        init();
     }
 }

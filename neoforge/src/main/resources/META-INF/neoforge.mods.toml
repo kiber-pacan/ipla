@@ -32,6 +32,3 @@ type = "required"
 versionRange = "[${architectury_api_version},)"
 ordering = "AFTER"
 side = "BOTH"
-
-[[mixins]]
-config = "ipla.mixins.json"

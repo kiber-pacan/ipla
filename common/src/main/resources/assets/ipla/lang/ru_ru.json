@@ -6,7 +6,7 @@
   "ipla.midnightconfig.iSize" : "Размер блоков",
   "ipla.midnightconfig.bSize" : "Размер предметов",
 
-  "text.autoconfig.ipla.title" : "конфигурация Ipla",
+  "text.autoconfig.ipla.title" : "Конфигурация Ipla",
 
   "text.autoconfig.ipla.option.oldRendering" : "Старая отрисовка блоков",
   "text.autoconfig.ipla.option.absSize" : "Абсолютный размер",

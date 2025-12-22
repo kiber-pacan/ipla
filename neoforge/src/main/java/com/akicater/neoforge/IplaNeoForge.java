@@ -2,7 +2,7 @@ package com.akicater.neoforge;
 
 import com.akicater.blocks.LayingItem;
 import com.akicater.blocks.LayingItemEntity;
-import com.akicater.client.IplaConfig;
+import com.akicater.client.IPLA_ConfigScreen;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -11,6 +11,7 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.ModLoadingContext;
 import net.neoforged.fml.common.Mod;
 import com.akicater.IPLA;
 
@@ -26,6 +27,7 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 
 #if MC_VER >= V1_20_4
 import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -67,12 +69,23 @@ public final class IplaNeoForge {
 
         modBus.addListener(this::onCommonSetup);
         #else
-        Ipla.initializeServer();
+        IPLA.initializeServer();
 
         if (FMLEnvironment.dist.isClient()) {
-            Ipla.initializeClient();
+            IPLA.initializeClient();
         }
         #endif
+
+        ModLoadingContext.get().registerExtensionPoint(
+                #if MC_VER >= V1_21
+                IConfigScreenFactory.class,
+                () -> (client, parent) -> new IPLA_ConfigScreen(parent)
+                #else
+                ConfigScreenHandler.ConfigScreenFactory.class,
+                () -> new ConfigScreenHandler.ConfigScreenFactory(
+                (client, parent) -> new IPLA_ConfigScreen(parent))
+                #endif
+        );
     }
 
     private void onCommonSetup(final FMLCommonSetupEvent event) {
@@ -89,7 +102,7 @@ public final class IplaNeoForge {
         }
 
         #else
-            DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> Ipla::initializeClient);
+            DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> IPLA::initializeClient);
         #endif
 
     }

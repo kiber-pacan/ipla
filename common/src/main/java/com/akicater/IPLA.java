@@ -206,7 +206,6 @@ public final class IPLA {
             return EventResult.interruptDefault();
         });
 
-        #if MC_VER >= V1_20_4
         ClientLifecycleEvent.CLIENT_STARTED.register((minecraft) -> {
             try {
                 config.loadConfig();
@@ -223,7 +222,6 @@ public final class IPLA {
         ClientLifecycleEvent.CLIENT_STOPPING.register((minecraft) -> {
             config.saveConfig();
         });
-        #endif
     }
 
     static List<AABB> boxes = new ArrayList<>(
