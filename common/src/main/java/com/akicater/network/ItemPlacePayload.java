@@ -5,11 +5,10 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.InteractionHand;
 import org.jetbrains.annotations.NotNull;
 #endif
 
-import com.akicater.Ipla;
+import com.akicater.IPLA;
 import com.akicater.blocks.LayingItemEntity;
 import com.mojang.datafixers.util.Pair;
 import net.minecraft.core.BlockPos;
@@ -27,7 +26,8 @@ import net.minecraft.world.phys.BlockHitResult;
 
 import java.util.Random;
 
-import static com.akicater.Ipla.MOD_ID;
+import static com.akicater.IPLA.MOD_ID;
+import static com.akicater.IPLA.config;
 
 public #if MC_VER >= V1_21 record #else class #endif ItemPlacePayload #if MC_VER >= V1_21 (BlockPos pos, BlockHitResult hitResult) implements CustomPacketPayload #endif {
     #if MC_VER >= V1_21
@@ -47,7 +47,7 @@ public #if MC_VER >= V1_21 record #else class #endif ItemPlacePayload #if MC_VER
         Level level = player #if MC_VER < V1_20_1 .level #else .level() #endif;
         BlockPos tempPos = pos;
 
-        if (level.getBlockState(pos).getBlock() != Ipla.lItemBlock #if MC_VER < V1_21_3 .get() #endif) {
+        if (level.getBlockState(pos).getBlock() != IPLA.lItemBlock #if MC_VER < V1_21_3 .get() #endif) {
             tempPos = pos.relative(hitResult.getDirection(), 1);
         }
 
@@ -56,8 +56,12 @@ public #if MC_VER >= V1_21 record #else class #endif ItemPlacePayload #if MC_VER
 
         Random random = new Random();
 
+        float rotationDegrees = config.getRotationDegrees();
+        float rotatedDegrees = random.nextFloat(-360, 360);
+        float flooredDegrees = rotatedDegrees - (rotatedDegrees % rotationDegrees);
+
         if (replBlock == Blocks.AIR || replBlock == Blocks.WATER) {
-            BlockState state = Ipla.lItemBlock #if MC_VER < V1_21_3 .get() #endif.defaultBlockState();
+            BlockState state = IPLA.lItemBlock #if MC_VER < V1_21_3 .get() #endif.defaultBlockState();
 
             if (replBlock == Blocks.WATER && level.getBlockState(tempPos).getValue(BlockStateProperties.LEVEL) == 0) {
                 state = state.setValue(BlockStateProperties.WATERLOGGED, true);
@@ -69,36 +73,36 @@ public #if MC_VER >= V1_21 record #else class #endif ItemPlacePayload #if MC_VER
 
             if (entity != null) {
                 if (player.isDiscrete()) {
-                    Pair<Integer,Integer> pair = Ipla.getIndexFromHit(hitResult, true);
+                    Pair<Integer,Integer> pair = IPLA.getIndexFromHit(hitResult, true);
 
                     int x = pair.getFirst() * 4 + pair.getSecond();
 
                     entity.setItem(x, stack);
                     entity.quad.set(i, true);
-                    entity.rot.set(x, random.nextFloat(-360, 360));
+                    entity.rot.set(x, flooredDegrees);
                 } else {
                     entity.setItem(i * 4, stack);
-                    entity.rot.set(i * 4, random.nextFloat(-360, 360));
+                    entity.rot.set(i * 4, flooredDegrees);
                 }
 
                 level.playSound(null, pos.getX(), pos.getY(), pos.getZ(), SoundEvents.PAINTING_PLACE, SoundSource.BLOCKS, 1, 1.4f);
 
                 entity.markDirty();
             }
-        } else if (level.getBlockState(tempPos).getBlock() == Ipla.lItemBlock #if MC_VER < V1_21_3 .get() #endif) {
+        } else if (level.getBlockState(tempPos).getBlock() == IPLA.lItemBlock #if MC_VER < V1_21_3 .get() #endif) {
             LayingItemEntity entity = (LayingItemEntity)level#if MC_VER < V1_21 .getChunk(tempPos) #endif.getBlockEntity(tempPos);
 
             if (entity != null) {
                 boolean hitIsLItem = tempPos != pos;
 
-                Pair<Integer,Integer> pair = Ipla.getIndexFromHit(hitResult, hitIsLItem);
+                Pair<Integer,Integer> pair = IPLA.getIndexFromHit(hitResult, hitIsLItem);
                 boolean quad = entity.quad.get(pair.getFirst()) || player.isDiscrete();
 
                 int x = pair.getFirst() * 4 + ((quad) ? pair.getSecond() : 0);
 
                 if(entity.inv.get(x).isEmpty()) {
                     entity.setItem(x, stack);
-                    entity.rot.set(x, random.nextFloat(-360, 360));
+                    entity.rot.set(x, flooredDegrees);
 
                     if (quad)
                         entity.quad.set(pair.getFirst(), true);

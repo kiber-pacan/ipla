@@ -1,7 +1,6 @@
 package com.akicater.client;
 
 #if MC_VER >= V1_19_4
-import com.akicater.Ipla;
 import com.mojang.math.Axis;
 import net.minecraft.world.item.ItemDisplayContext;
 import org.joml.Quaternionf;

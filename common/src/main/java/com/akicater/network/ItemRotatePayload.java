@@ -1,6 +1,7 @@
 package com.akicater.network;
 
 #if MC_VER >= V1_21
+import com.akicater.IPLA;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -14,12 +15,12 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.BlockHitResult;
 
-import static com.akicater.Ipla.*;
+import static com.akicater.IPLA.*;
 
-public #if MC_VER >= V1_21 record #else class #endif ItemRotatePayload #if MC_VER >= V1_21 (float degrees, int y, boolean rounded, BlockHitResult hitResult) implements CustomPacketPayload #endif {
+public #if MC_VER >= V1_21 record #else class #endif ItemRotatePayload #if MC_VER >= V1_21 (int y, BlockHitResult hitResult) implements CustomPacketPayload #endif {
     #if MC_VER >= V1_21
     public static final Type<ItemRotatePayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(MOD_ID, "rotate_item"));
-    public static final StreamCodec<FriendlyByteBuf, ItemRotatePayload> CODEC = StreamCodec.of((buf, value) -> buf.writeFloat(value.degrees).writeInt(value.y).writeBoolean(value.rounded).writeBlockHitResult(value.hitResult), buf -> new ItemRotatePayload(buf.readFloat(), buf.readInt(), buf.readBoolean(), buf.readBlockHitResult()));
+    public static final StreamCodec<FriendlyByteBuf, ItemRotatePayload> CODEC = StreamCodec.of((buf, value) -> buf.writeInt(value.y).writeBlockHitResult(value.hitResult), buf -> new ItemRotatePayload(buf.readInt(), buf.readBlockHitResult()));
 
     @Override
     public @NotNull Type<? extends CustomPacketPayload> type() {
@@ -27,7 +28,7 @@ public #if MC_VER >= V1_21 record #else class #endif ItemRotatePayload #if MC_VE
     }
     #endif
 
-    public static void receive(Player player, float degrees, int y, boolean rounded, BlockHitResult hitResult) {
+    public static void receive(Player player, int y, BlockHitResult hitResult) {
         Level level = player #if MC_VER < V1_20_1 .level #else .level() #endif;
         LayingItemEntity entity;
 
@@ -37,11 +38,11 @@ public #if MC_VER >= V1_21 record #else class #endif ItemRotatePayload #if MC_VE
             boolean quad = entity.quad.get(pair.getFirst());
             int x = pair.getFirst() * 4 + ((quad) ? pair.getSecond() : 0);
 
-            if (rounded) {
-                entity.rot.set(x, (entity.rot.get(x) - entity.rot.get(x) % 22.5f) + 22.5f * y);
-            } else {
-                entity.rot.set(x, entity.rot.get(x) + degrees * y);
-            }
+            float rotationDegrees = config.getRotationDegrees();
+            float rotatedDegrees = (entity.rot.get(x) + rotationDegrees * y);
+            float flooredDegrees = rotatedDegrees - (rotatedDegrees % rotationDegrees);
+
+            entity.rot.set(x, flooredDegrees);
 
             entity.markDirty();
         }

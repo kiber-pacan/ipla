@@ -1,15 +1,12 @@
 package com.akicater.blocks;
 
-import com.akicater.Ipla;
+import com.akicater.IPLA;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 #if MC_VER >= V1_19_4
-import net.minecraft.core.registries.Registries;
 #endif
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 
@@ -18,28 +15,21 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.*;
 
 import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.*;
-import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
-import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.logging.Logger;
-
 #if MC_VER > V1_21
 import net.minecraft.util.RandomSource;
-
-import static com.akicater.Ipla.MOD_ID;
 #endif
 
 public class LayingItem extends BaseEntityBlock implements SimpleWaterloggedBlock {
@@ -151,7 +141,7 @@ public class LayingItem extends BaseEntityBlock implements SimpleWaterloggedBloc
         LayingItemEntity entity = (LayingItemEntity) level#if MC_VER < V1_21 .getChunk(pos) #endif.getBlockEntity(pos);
 
         if (entity != null) {
-            Pair<Integer, Integer> pair = Ipla.getIndexFromHit(hit, false);
+            Pair<Integer, Integer> pair = IPLA.getIndexFromHit(hit, false);
             int s = pair.getFirst();
             int i = pair.getSecond();
 

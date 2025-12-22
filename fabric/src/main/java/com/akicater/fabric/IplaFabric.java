@@ -1,7 +1,7 @@
 package com.akicater.fabric;
 
 
-import com.akicater.Ipla;
+import com.akicater.IPLA;
 import com.akicater.blocks.LayingItem;
 import com.akicater.blocks.LayingItemEntity;
 import net.fabricmc.api.ModInitializer;
@@ -20,10 +20,10 @@ public final class IplaFabric implements ModInitializer {
     @Override
     public void onInitialize() {
         #if MC_VER >= V1_21_3
-        ResourceKey<Block> key = ResourceKey.create(Registries.BLOCK, #if MC_VER >= V1_21 ResourceLocation.fromNamespaceAndPath #else new ResourceLocation #endif(Ipla.MOD_ID, "l_item"));
+        ResourceKey<Block> key = ResourceKey.create(Registries.BLOCK, #if MC_VER >= V1_21 ResourceLocation.fromNamespaceAndPath #else new ResourceLocation #endif(IPLA.MOD_ID, "l_item"));
 
-        Ipla.lItemBlock = Ipla.blocks.register(
-                #if MC_VER >= V1_21 ResourceLocation.fromNamespaceAndPath #else new ResourceLocation #endif(Ipla.MOD_ID, "l_item"),
+        IPLA.lItemBlock = IPLA.blocks.register(
+                #if MC_VER >= V1_21 ResourceLocation.fromNamespaceAndPath #else new ResourceLocation #endif(IPLA.MOD_ID, "l_item"),
                 () -> new LayingItem(BlockBehaviour.Properties.of(#if MC_VER < V1_20_1 Material.AIR #endif)
                         .instabreak()
                         .dynamicShape()
@@ -34,11 +34,11 @@ public final class IplaFabric implements ModInitializer {
                 )
         ).get();
 
-        Ipla.lItemBlockEntity = Ipla.blockEntities.register(
-                #if MC_VER >= V1_21 ResourceLocation.fromNamespaceAndPath #else new ResourceLocation #endif(Ipla.MOD_ID, "l_item_entity"),
-                () -> FabricBlockEntityTypeBuilder.create(LayingItemEntity::new, Ipla.lItemBlock).build(null)
+        IPLA.lItemBlockEntity = IPLA.blockEntities.register(
+                #if MC_VER >= V1_21 ResourceLocation.fromNamespaceAndPath #else new ResourceLocation #endif(IPLA.MOD_ID, "l_item_entity"),
+                () -> FabricBlockEntityTypeBuilder.create(LayingItemEntity::new, IPLA.lItemBlock).build(null)
         ).get();
         #endif
-        Ipla.initializeServer();
+        IPLA.initializeServer();
     }
 }

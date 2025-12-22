@@ -1,6 +1,6 @@
 package com.akicater.blocks;
 
-import com.akicater.Ipla;
+import com.akicater.IPLA;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.NonNullList;
 #if MC_VER >= V1_21
@@ -8,9 +8,7 @@ import net.minecraft.core.HolderLookup;
 #endif
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
-import net.minecraft.world.Container;
 import net.minecraft.world.ContainerHelper;
-import net.minecraft.world.Containers;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -39,7 +37,7 @@ public class LayingItemEntity extends BlockEntity {
 
 
     public LayingItemEntity(BlockPos pos, BlockState blockState) {
-        super(Ipla.lItemBlockEntity #if MC_VER < V1_21_3 .get() #endif, pos, blockState);
+        super(IPLA.lItemBlockEntity #if MC_VER < V1_21_3 .get() #endif, pos, blockState);
 
         inv = NonNullList.withSize(24, ItemStack.EMPTY);
 
