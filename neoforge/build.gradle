@@ -44,8 +44,6 @@ dependencies {
 
     modImplementation "dev.architectury:architectury-neoforge:${rootProject.architectury_api_version}"
 
-    modImplementation("dev.isxander:yet-another-config-lib:${project.yacl_version}+${rootProject.minecraft_version}-neoforge")
-
     common(project(path: ':common', configuration: 'namedElements')) { transitive false }
     shadowBundle(project(path: ':common', configuration: 'transformProductionNeoForge'))
 }
