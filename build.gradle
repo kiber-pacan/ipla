@@ -142,6 +142,7 @@ subprojects {
         }
     }
 
+
     dependencies {
         // Manifold preprocessor
         annotationProcessor("systems.manifold:manifold-preprocessor:${manifold_version}")
@@ -194,7 +195,7 @@ subprojects {
         apiKey = credentials.getProperty("curseToken")
 
         project {
-            id = "1057076"
+            id = "1124962"
 
             releaseType = "release"
             addGameVersion rootProject.minecraft_version
