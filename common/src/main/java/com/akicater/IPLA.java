@@ -19,14 +19,22 @@ import dev.architectury.registry.client.keymappings.KeyMappingRegistry;
 import dev.architectury.registry.registries.Registrar;
 import dev.architectury.registry.registries.RegistrySupplier;
 import io.netty.buffer.Unpooled;
+import net.fabricmc.loader.impl.lib.sat4j.core.Vec;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
 import net.minecraft.network.FriendlyByteBuf;
+#if MC_VER >= V1_21_11
+import net.minecraft.resources.Identifier;
+#else
 import net.minecraft.resources.ResourceLocation;
+#endif
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -88,9 +96,8 @@ public final class IPLA {
 
     public static final Random RANDOM = new Random();
 
-    public static ResourceLocation ITEM_PLACE;
-    public static ResourceLocation ITEM_ROTATE;
-
+    public static #if MC_VER >= V1_21_11 Identifier #else ResourceLocation #endif ITEM_PLACE;
+    public static #if MC_VER >= V1_21_11 Identifier #else ResourceLocation #endif ITEM_ROTATE;
 
 
     public static void initializeServer() {
@@ -132,19 +139,21 @@ public final class IPLA {
 		#endif
     }
 
+    #if MC_VER >= V1_21_9 static KeyMapping.Category category = KeyMapping.Category.register(#if MC_VER >= V1_21_11 Identifier #else ResourceLocation #endif.fromNamespaceAndPath(MOD_ID, "ipla")); #endif
+
     public static void initializeClient() {
         PLACE_ITEM_KEY = new KeyMapping(
                 "key.ipla.place_item_key",
                 InputConstants.Type.KEYSYM,
                 InputConstants.KEY_V,
-                "key.categories.ipla"
+                #if MC_VER >= V1_21_9 category #else "key.categories.ipla" #endif
         );
 
         ROTATE_ITEM_KEY = new KeyMapping(
                 "key.ipla.rotate_item_key",
                 InputConstants.Type.KEYSYM,
                 InputConstants.KEY_LALT,
-                "key.categories.ipla"
+                #if MC_VER >= V1_21_9 category #else "key.categories.ipla" #endif
         );
 
         KeyMappingRegistry.register(PLACE_ITEM_KEY);
@@ -226,14 +235,29 @@ public final class IPLA {
 
     static List<AABB> boxes = new ArrayList<>(
             List.of(
-                    new AABB(0.125f, 0.875f, 0.125f, 0.875f, 1.0f, 0.875f),
-                    new AABB(0.125f, 0.0f, 0.125f, 0.875f, 0.125f, 0.875f),
-                    new AABB(0.125f, 0.125f, 0.875f, 0.875f, 0.875f, 1.0f),
-                    new AABB(0.125f, 0.125f, 0.0f, 0.875f, 0.875f, 0.125f),
-                    new AABB(0.875f, 0.125f, 0.125f, 1.0f, 0.875f, 0.875f),
-                    new AABB(0.0f, 0.125f, 0.125f, 0.125f, 0.875f, 0.875f)
+                    new AABB(0.0, 1.0 - 1.0 / 16 * 4, 0.0, 1.0, 1.0, 1.0), // TOP
+                    new AABB(0.0, 0.0, 0.0, 1.0, 1.0 / 16 * 4, 1.0), // DOWN
+                    new AABB(0.0, 0.0, 1.0 - 1.0 / 16 * 4, 1.0, 1.0, 1.0), // SOUTH
+                    new AABB(0.0, 0.0, 0, 1.0, 1.0, 1.0 / 16 * 4), // NORTH
+                    new AABB(1.0 / 16 * 4, 0.0, 0.0, 1.0 / 16 * 4, 1.0f, 1.0f), // WEST
+                    new AABB(1.0 - 1.0 / 16 * 4, 0.0, 0.0, 1.0 - 1.0 / 16 * 4, 1.0f, 1.0f) // EAST
         )
+
+
     );
+
+    /*
+    static List<AABB> boxes = new ArrayList<>(
+            List.of(
+                    new AABB(0.0, 1.0 - 1.0 / 16 * 4, 0.0, 1.0, 1.0, 1.0), // TOP
+                    new AABB(0.0, 0.0, 0.0, 1.0, 1.0 / 16 * 4, 1.0), // DOWN
+                    new AABB(0.0, 0.0, 1.0 - 1.0 / 16 * 4, 1.0, 1.0, 1.0), // SOUTH
+                    new AABB(0.0, 0.0, 0.0, 1.0, 1.0, 1.0 / 16 * 4), // NORTH
+                    new AABB(1.0 - 1.0 / 16 * 4, 0.0, 0.0, 1.0, 1.0, 1.0), // WEST
+                    new AABB(0.0, 0.0, 0.0, 1.0 / 16 * 4, 1.0, 1.0) // EAST
+            )
+    );
+    */
 
     public static BlockHitResult getBlockHitResult(HitResult hit) {
         if (hit.getType() == HitResult.Type.BLOCK) {
@@ -242,21 +266,23 @@ public final class IPLA {
         return null;
     }
 
-    static boolean contains(float x, float y, float z, AABB box) {
-        return x >= box.minX
-                && x <= box.maxX
-                && y >= box.minY
-                && y <= box.maxY
-                && z >= box.minZ
-                && z <= box.maxZ;
+    static final double EPS = 1e-6;
+
+    static boolean contains(double x, double y, double z, AABB box) {
+        return x >= box.minX - EPS && x <= box.maxX + EPS
+                && y >= box.minY - EPS && y <= box.maxY + EPS
+                && z >= box.minZ - EPS && z <= box.maxZ + EPS;
     }
 
-    public static int getSlotFromShape(float x, float y, float z) {
+
+    public static int getSlotFromShape(double x, double y, double z) {
+        List<Integer> slots = new ArrayList<>();
         for (int i = 0; i < boxes.size(); i++) {
             if (contains(x, y, z, boxes.get(i))) {
                 return i;
             }
         }
+
         return -1;
     }
 
@@ -264,9 +290,9 @@ public final class IPLA {
         BlockPos blockPos = hit.getBlockPos();
         Vec3 pos = hit.getLocation();
 
-        float x = (float) Math.abs(pos.x - blockPos.getX());
-        float y = (float) Math.abs(pos.y - blockPos.getY());
-        float z = (float) Math.abs(pos.z - blockPos.getZ());
+        double x = Math.abs(pos.x - blockPos.getX());
+        double y = Math.abs(pos.y - blockPos.getY());
+        double z = Math.abs(pos.z - blockPos.getZ());
 
         int slot;
 
@@ -291,7 +317,34 @@ public final class IPLA {
         return new Pair<>(0, 0);
     }
 
-    private static int getIndexFromXY(float a, float b) {
-        return ((a > 0.5f) ? 1 : 0) + ((b > 0.5f) ? 2 : 0);
+    public static List<Integer> getPreciseIndexFromHit(LayingItemEntity entity, BlockHitResult hit, Boolean empty) {
+        List<Integer> list = new ArrayList<>(0);
+
+        for (int i = 0; i < entity.inv.size(); i++) {
+            ItemStack stack = entity.inv.get(i);
+            boolean cuboid = entity.isCuboid(i);
+            boolean quad = entity.quad.get((int) i / 4);
+
+            if (!stack.isEmpty()) {
+                BlockPos blockPos = hit.getBlockPos();
+                Vec3 pos = hit.getLocation();
+
+                double x = Math.abs(pos.x - blockPos.getX());
+                double y = Math.abs(pos.y - blockPos.getY());
+                double z = Math.abs(pos.z - blockPos.getZ());
+
+                boolean contains = contains(x, y, z, ((quad) ? ((cuboid) ? LayingItemEntity.basicQuadShapesBlock.get(i) : LayingItemEntity.basicQuadShapesItem.get(i)) : ((cuboid) ? LayingItemEntity.basicShapesBlock.get((int) i / 4) : LayingItemEntity.basicShapesItem.get((int) i / 4))).bounds());
+
+                if (contains) {
+                    list.add(i);
+                }
+            }
+        }
+
+        return list;
+    }
+
+    private static int getIndexFromXY(double a, double b) {
+        return ((a > 0.5) ? 1 : 0) + ((b > 0.5) ? 2 : 0);
     }
 }

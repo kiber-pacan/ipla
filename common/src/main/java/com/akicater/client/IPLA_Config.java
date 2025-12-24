@@ -9,15 +9,36 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 
+#if MC_VER >= V1_20_1
+#endif
+
+
+
+#if MC_VER >= V1_19_4
+#else
+
+#endif
+
+#if MC_VER >= V1_19_2
+#else
+import net.minecraft.network.chat.TextComponent;
+#endif
 
 public class IPLA_Config {
     public boolean oldRendering;
+
+    // Rotation
+    public int rotationPower;
+    protected float baseDegrees = 90.0f;
+
+    // Size
     public float absoluteSize;
     public float itemSize;
     public float blockSize;
-    public int rotationPower;
 
-    protected float baseDegrees = 90.0f;
+    // Resize
+    public float itemScale;
+    public float blockScale;
 
     public IPLA_Config(){}
 
@@ -33,10 +54,15 @@ public class IPLA_Config {
             fileConfig.load();
 
             Optional<Boolean> oldRendering = fileConfig.getOptional("oldRendering");
+
+            Optional<Integer> rotPower = fileConfig.getOptional("rotPower");
+
             Optional<Float> absSize = fileConfig.getOptional("absSize");
             Optional<Float> iSize = fileConfig.getOptional("iSize");
             Optional<Float> bSize = fileConfig.getOptional("bSize");
-            Optional<Integer> rotPower = fileConfig.getOptional("rotPower");
+
+            Optional<Float> itemScale = fileConfig.getOptional("itemScale");
+            Optional<Float> blockScale = fileConfig.getOptional("bSize");
 
             boolean broken = false;
 
@@ -75,20 +101,41 @@ public class IPLA_Config {
                 broken = true;
             }
 
+            try {
+                this.blockScale = blockScale.orElse(2.0f);
+            } catch (Exception e) {
+                this.blockScale = 2.0f;
+                broken = true;
+            }
+
+            try {
+                this.itemScale = blockScale.orElse(2.0f);
+            } catch (Exception e) {
+                this.itemScale = 2.0f;
+                broken = true;
+            }
+
+
             if (broken) saveConfig();
 
         } else {
-            defaultConfig();
+            defaultBaseConfig();
             saveConfig();
         }
     }
 
-    public void defaultConfig() {
+    public void defaultBaseConfig() {
         this.oldRendering = false;
+        this.rotationPower = 1;
+
         this.absoluteSize = 1.0f;
         this.itemSize = 1.0f;
         this.blockSize = 1.0f;
-        this.rotationPower = 1;
+    }
+
+    public void defaultScaleConfig() {
+        this.blockScale = 2.0f;
+        this.itemScale = 2.0f;
     }
 
     public void saveConfig() {
@@ -101,6 +148,8 @@ public class IPLA_Config {
             writer.write("iSize = " + itemSize + "\n");
             writer.write("bSize = " + blockSize + "\n");
             writer.write("rotPower = " + rotationPower + "\n");
+            writer.write("blockScale = " + blockScale + "\n");
+            writer.write("itemScale = " + itemScale + "\n");
         } catch (IOException e) {
             e.printStackTrace();
         }

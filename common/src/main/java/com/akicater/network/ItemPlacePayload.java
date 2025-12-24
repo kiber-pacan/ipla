@@ -4,8 +4,14 @@ package com.akicater.network;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+
 import org.jetbrains.annotations.NotNull;
+#endif
+
+#if MC_VER >= V1_21_11
+import net.minecraft.resources.Identifier;
+#else
+import net.minecraft.resources.ResourceLocation;
 #endif
 
 import com.akicater.IPLA;
@@ -26,12 +32,11 @@ import net.minecraft.world.phys.BlockHitResult;
 
 import java.util.Random;
 
-import static com.akicater.IPLA.MOD_ID;
-import static com.akicater.IPLA.config;
+import static com.akicater.IPLA.*;
 
 public #if MC_VER >= V1_21 record #else class #endif ItemPlacePayload #if MC_VER >= V1_21 (BlockPos pos, BlockHitResult hitResult) implements CustomPacketPayload #endif {
     #if MC_VER >= V1_21
-    public static final Type<ItemPlacePayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(MOD_ID, "place_item"));
+    public static final Type<ItemPlacePayload> TYPE = new Type<>(#if MC_VER >= V1_21_11 Identifier #else ResourceLocation #endif.fromNamespaceAndPath(MOD_ID, "place_item"));
     public static final StreamCodec<FriendlyByteBuf, ItemPlacePayload> CODEC = StreamCodec.of((buf, value) -> buf.writeBlockPos(value.pos).writeBlockHitResult(value.hitResult), buf -> new ItemPlacePayload(buf.readBlockPos(), buf.readBlockHitResult()));
 
     @Override
@@ -57,8 +62,10 @@ public #if MC_VER >= V1_21 record #else class #endif ItemPlacePayload #if MC_VER
         Random random = new Random();
 
         float rotationDegrees = config.getRotationDegrees();
-        float rotatedDegrees = random.nextFloat(-360, 360);
+        float rotatedDegrees = random.nextFloat(180, 360) * (random.nextInt(0, 2) * 2 - 1);
         float flooredDegrees = rotatedDegrees - (rotatedDegrees % rotationDegrees);
+
+        LOGGER.info(String.valueOf(rotatedDegrees));
 
         if (replBlock == Blocks.AIR || replBlock == Blocks.WATER) {
             BlockState state = IPLA.lItemBlock #if MC_VER < V1_21_3 .get() #endif.defaultBlockState();

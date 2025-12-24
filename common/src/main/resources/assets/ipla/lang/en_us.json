@@ -18,5 +18,7 @@
   "key.ipla.place_item_key" : "Place item",
   "key.ipla.rotate_item_key" : "Rotate item",
   "key.ipla.rotate_rounded_item_key" : "Rounded rotation",
-  "key.ipla.hide_item_key" : "Hide item bounding box"
+  "key.ipla.hide_item_key" : "Hide item bounding box",
+
+  "block.ipla.l_item" : "Laying item"
 }

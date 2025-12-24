@@ -1,8 +1,8 @@
-package com.akicater.client;
+package com.akicater.client.screen;
 
 import com.akicater.IPLA;
-import com.mojang.blaze3d.vertex.PoseStack;
 #if MC_VER >= V1_20_1
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 #endif
 import net.minecraft.client.gui.components.AbstractSliderButton;
@@ -16,7 +16,6 @@ import net.minecraft.client.gui.screens.Screen;
 import static com.akicater.IPLA.config;
 
 #if MC_VER >= V1_19_4
-import net.minecraft.client.gui.layouts.*;
 #else
 
 #endif
@@ -27,7 +26,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TextComponent;
 #endif
 
-public class IPLA_ConfigScreen extends Screen {
+public class IPLA_ConfigScreenBase extends Screen {
     private final Screen parent;
 
     private static final #if MC_VER >= V1_19_2 Component #else TextComponent #endif TITLE = #if MC_VER >= V1_19_2 Component.literal #else new TextComponent #endif ("IPLA config");
@@ -38,7 +37,7 @@ public class IPLA_ConfigScreen extends Screen {
     private boolean oldRendering;
     private int rotationPower;
 
-    public IPLA_ConfigScreen(Screen parent) {
+    public IPLA_ConfigScreenBase(Screen parent) {
         super(TITLE);
         this.parent = parent;
 
@@ -64,7 +63,7 @@ public class IPLA_ConfigScreen extends Screen {
         int widthButton = 200;
         int heightButton = 20;
         int x = (this.width - widthButton) / 2;
-        int y = 20;
+        int y = 30;
         int gap = 4;
 
         // Absolute size
@@ -133,6 +132,25 @@ public class IPLA_ConfigScreen extends Screen {
         });
         y += heightButton + gap;
 
+        // Scale screen
+        #if MC_VER >= V1_19_4
+        this.addRenderableWidget(
+                Button.builder(
+                                #if MC_VER >= V1_19_2 Component.literal #else new TextComponent #endif ("Scale settings"),
+
+                                b -> Minecraft.getInstance().setScreen(new IPLA_ConfigScreenScale(this))
+                        )
+                        .bounds(x, y, widthButton, heightButton)
+                        .build()
+        );
+        #else
+        this.addRenderableWidget(new Button(x, y, widthButton, heightButton, #if MC_VER >= V1_19_2 Component.literal #else new TextComponent #endif ("Scale settings"),
+            b -> Minecraft.getInstance().screen = new IPLA_ConfigScreenScale(this)
+        ));
+        #endif
+
+        y += heightButton + gap;
+
         // Old rendering checkbox
         #if MC_VER >= V1_20_4
         this.addRenderableWidget(Checkbox.builder(Component.literal("Old rendering"), this.font)
@@ -155,7 +173,8 @@ public class IPLA_ConfigScreen extends Screen {
             }
         });
         #endif
-        y += heightButton + gap;
+
+        y += heightButton + gap * 4;
 
         // Reset
         #if MC_VER >= V1_19_4
@@ -204,7 +223,8 @@ public class IPLA_ConfigScreen extends Screen {
 
     public void reload() {
         clearWidgets();
-        config.defaultConfig();
+        config.defaultBaseConfig();
+        config.defaultScaleConfig();
         config.saveConfig();
 
         this.absSize = config.absoluteSize;

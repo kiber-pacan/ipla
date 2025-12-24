@@ -10,6 +10,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.world.ContainerHelper;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -64,11 +65,11 @@ public class LayingItemEntity extends BlockEntity {
         ContainerHelper.loadAllItems(compoundTag, this.inv #if MC_VER >= V1_21 && MC_VER <= V1_21_5 , provider #endif);
 
         for (int i = 0; i < 6; i++) {
-            quad.set(i, compoundTag #if MC_VER <= V1_21_5 .getBoolean #else .getBooleanOr #endif("s" + i #if MC_VER >= V1_21_6, true #endif) #if MC_VER <= V1_21_5 .get() #endif);
+            quad.set(i, compoundTag #if MC_VER <= V1_21_5 .getBoolean #else .getBooleanOr #endif("s" + i #if MC_VER >= V1_21_6, true #endif) #if MC_VER == V1_21_5 .get() #endif);
         }
 
         for (int i = 0; i < 24; i++) {
-            rot.set(i, compoundTag #if MC_VER <= V1_21_5 .getFloat #else .getFloatOr #endif("r" + i #if MC_VER >= V1_21_6, 1.0f #endif) #if MC_VER <= V1_21_5 .get() #endif);
+            rot.set(i, compoundTag #if MC_VER <= V1_21_5 .getFloat #else .getFloatOr #endif("r" + i #if MC_VER >= V1_21_6, 1.0f #endif) #if MC_VER == V1_21_5 .get() #endif);
         }
     }
 
@@ -116,6 +117,110 @@ public class LayingItemEntity extends BlockEntity {
     }
     #endif
 
+    public boolean isCuboid(int slot, int subSlot) {
+        return this.inv.get(slot * 4 + subSlot).getItem() instanceof BlockItem && ((BlockItem) this.inv.get(slot * 4 + subSlot).getItem()).getBlock().defaultBlockState().isCollisionShapeFullBlock(this.getLevel(), this.getBlockPos());
+    }
+
+    public boolean isCuboid(int slot) {
+        return this.inv.get(slot).getItem() instanceof BlockItem && ((BlockItem) this.inv.get(slot).getItem()).getBlock().defaultBlockState().isCollisionShapeFullBlock(this.getLevel(), this.getBlockPos());
+    }
+
+    public static List<VoxelShape> basicShapesItem = List.of(
+            Shapes.box(0.0, 1.0 - 1.0 / 16, 0.0, 1.0, 1.0, 1.0), // TOP
+            Shapes.box(0.0, 0.0, 0.0, 1.0, 1.0 / 16, 1.0), // DOWN
+            Shapes.box(0.0, 0.0, 1.0 - 1.0 / 16, 1.0, 1.0, 1.0), // SOUTH
+            Shapes.box(0.0, 0.0, 0.0, 1.0, 1.0, 1.0 / 16), // NORTH
+            Shapes.box(1.0 - 1.0 / 16, 0.0, 0.0, 1.0, 1.0, 1.0), // WEST
+            Shapes.box(0.0, 0.0, 0.0, 1.0 / 16, 1.0, 1.0) // EAST
+    );
+
+    public static List<VoxelShape> basicShapesBlock = List.of(
+            Shapes.box(1.0 / 4, 1.0 / 2, 1.0 / 4, 3 * 1.0 / 4, 1.0, 3 * 1.0 / 4), // TOP
+            Shapes.box(1.0 / 4, 0.0, 1.0 / 4, 3 * 1.0 / 4, 1.0 / 2, 3 * 1.0 / 4), // DOWN
+            Shapes.box(1.0 / 4, 1.0 / 4, 1.0 / 2, 3 * 1.0 / 4, 3 * 1.0 / 4, 1.0), // SOUTH
+            Shapes.box(1.0 / 4, 1.0 / 4, 0, 3 * 1.0 / 4, 3 * 1.0 / 4, 1.0 / 2), // SOUTH
+            Shapes.box(1.0 / 2, 1.0 / 4, 1.0 / 4, 1.0, 3 * 1.0 / 4, 3 * 1.0 / 4), // WEST
+            Shapes.box(0, 1.0 / 4, 1.0 / 4, 1.0 / 2, 3 * 1.0 / 4, 3 * 1.0 / 4) // EAST
+    );
+
+    public static List<VoxelShape> basicQuadShapesItem = List.of(
+            // TOP
+            Shapes.box(0.0, 1.0 - 1.0 / 16, 0.0, 1.0 / 2, 1.0, 1.0 / 2),
+            Shapes.box(1.0 / 2, 1.0 - 1.0 / 16, 0.0, 1.0, 1.0, 1.0 / 2),
+            Shapes.box(0.0, 1.0 - 1.0 / 16, 1.0 / 2, 1.0 / 2, 1.0, 1.0),
+            Shapes.box(1.0 / 2, 1.0 - 1.0 / 16, 1.0 / 2, 1.0, 1.0, 1.0),
+
+            // DOWN
+            Shapes.box(0.0, 0, 1.0 / 2, 1.0 / 2, 1.0 / 16, 1.0),
+            Shapes.box(1.0 / 2, 0, 1.0 / 2, 1.0, 1.0 / 16, 1.0),
+            Shapes.box(0.0, 0, 0.0, 1.0 / 2, 1.0 / 16, 1.0 / 2),
+            Shapes.box(1.0 / 2, 0, 0.0, 1.0, 1.0 / 16, 1.0 / 2),
+
+            // SOUTH
+            Shapes.box(1.0 / 2, 0, 1.0 - 1.0 / 16, 1.0, 1.0 / 2, 1.0),
+            Shapes.box(0, 0, 1.0 - 1.0 / 16, 1.0 / 2, 1.0 / 2, 1.0),
+            Shapes.box(1.0 / 2, 1.0 / 2, 1.0 - 1.0 / 16, 1.0, 1.0, 1.0),
+            Shapes.box(0, 1.0 / 2, 1.0 - 1.0 / 16, 1.0 / 2, 1.0, 1.0),
+
+            // NORTH
+            Shapes.box(0, 0, 0, 1.0 / 2, 1.0 / 2, 1.0 / 16),
+            Shapes.box(1.0 / 2, 0, 0, 1.0, 1.0 / 2, 1.0 / 16),
+            Shapes.box(0, 1.0 / 2, 0, 1.0 / 2, 1.0, 1.0 / 16),
+            Shapes.box(1.0 / 2, 1.0 / 2, 0, 1.0, 1.0, 1.0 / 16),
+
+            // WEST
+            Shapes.box(1.0 - 1.0 / 16, 0, 0, 1.0, 1.0 / 2, 1.0 / 2),
+            Shapes.box(1.0 - 1.0 / 16, 0, 1.0 / 2, 1.0, 1.0 / 2, 1.0),
+            Shapes.box(1.0 - 1.0 / 16, 1.0 / 2, 0, 1.0, 1.0, 1.0 / 2),
+            Shapes.box(1.0 - 1.0 / 16, 1.0 / 2, 1.0 / 2, 1.0, 1.0, 1.0),
+
+            // EAST
+            Shapes.box(0.0, 0, 1.0 / 2, 1.0 / 16, 1.0 / 2, 1.0),
+            Shapes.box(0.0, 0, 0, 1.0 / 16, 1.0 / 2, 1.0 / 2),
+            Shapes.box(0.0, 1.0 / 2, 1.0 / 2, 1.0 / 16, 1.0, 1.0),
+            Shapes.box(0.0, 1.0 / 2, 0, 1.0 / 16, 1.0, 1.0 / 2)
+    );
+
+    public static List<VoxelShape> basicQuadShapesBlock = List.of(
+            // TOP
+            Shapes.box(1.0 / 16 * 2, 1.0 - 1.0 / 16 * 4, 1.0 / 16 * 2, 1.0 / 16 * 6, 1.0, 1.0 / 16 * 6),
+            Shapes.box(1.0 / 2 + 1.0 / 16 * 2, 1.0 - 1.0 / 16 * 4, 1.0 / 16 * 2, 1.0 / 2 + 1.0 / 16 * 6, 1.0, 1.0 / 16 * 6),
+            Shapes.box(1.0 / 16 * 2, 1.0 - 1.0 / 16 * 4, 1.0 / 2 + 1.0 / 16 * 2, 1.0 / 16 * 6, 1.0, 1.0 / 2 + 1.0 / 16 * 6),
+            Shapes.box(1.0 / 2 + 1.0 / 16 * 2, 1.0 - 1.0 / 16 * 4, 1.0 / 2 +  1.0 / 16 * 2, 1.0 / 2 + 1.0 / 16 * 6, 1.0, 1.0 / 2 + 1.0 / 16 * 6),
+
+            // DOWN
+            Shapes.box(1.0 / 16 * 2, 0, 1.0 / 2 + 1.0 / 16 * 2, 1.0 / 16 * 6, 1.0 / 16 * 4, 1.0 / 2 +  1.0 / 16 * 6),
+            Shapes.box(1.0 / 2 + 1.0 / 16 * 2, 0, 1.0 / 2 +  1.0 / 16 * 2, 1.0 / 2 + 1.0 / 16 * 6, 1.0 / 16 * 4, 1.0 / 2 +  1.0 / 16 * 6),
+            Shapes.box(1.0 / 16 * 2, 0, 1.0 / 16 * 2, 1.0 / 16 * 6, 1.0 / 16 * 4, 1.0 / 16 * 6),
+            Shapes.box(1.0 / 2 + 1.0 / 16 * 2, 0, 1.0 / 16 * 2, 1.0 / 2 + 1.0 / 16 * 6, 1.0 / 16 * 4, 1.0 / 16 * 6),
+
+
+            // SOUTH
+            Shapes.box(1.0 - 1.0 / 16 * 6, 1.0 / 16 * 2, 1.0 - 1.0 / 16 * 4, 1.0 - 1.0 / 16 * 2, 1.0 / 16 * 6, 1.0),
+            Shapes.box(1.0 / 16 * 2, 1.0 / 16 * 2, 1.0 - 1.0 / 16 * 4, 1.0 / 16 * 6, 1.0 / 16 * 6, 1.0),
+            Shapes.box(1.0 - 1.0 / 16 * 6, 1.0 - 1.0 / 16 * 6, 1.0 - 1.0 / 16 * 4, 1.0 - 1.0 / 16 * 2, 1.0 - 1.0 / 16 * 2, 1.0),
+            Shapes.box(1.0 / 16 * 2, 1.0 - 1.0 / 16 * 6, 1.0 - 1.0 / 16 * 4, 1.0 / 16 * 6, 1.0 - 1.0 / 16 * 2, 1.0),
+
+
+            // NORTH
+            Shapes.box(1.0 / 16 * 2, 1.0 / 16 * 2, 0, 1.0 / 16 * 6, 1.0 / 16 * 6, 1.0 / 16 * 4),
+            Shapes.box(1.0 - 1.0 / 16 * 6, 1.0 / 16 * 2, 0, 1.0 - 1.0 / 16 * 2, 1.0 / 16 * 6, 1.0 / 16 * 4),
+            Shapes.box(1.0 / 16 * 2, 1.0 - 1.0 / 16 * 6, 0, 1.0 / 16 * 6, 1.0 - 1.0 / 16 * 2, 1.0 / 16 * 4),
+            Shapes.box(1.0 - 1.0 / 16 * 6, 1.0 - 1.0 / 16 * 6, 0, 1.0 - 1.0 / 16 * 2, 1.0 - 1.0 / 16 * 2, 1.0 / 16 * 4),
+
+            // WEST
+            Shapes.box(1.0 - 1.0 / 16 * 4, 1.0 / 16 * 2, 1.0 / 16 * 2, 1.0, 1.0 / 16 * 6, 1.0 / 16 * 6),
+            Shapes.box(1.0 - 1.0 / 16 * 4, 1.0 / 16 * 2, 1.0 - 1.0 / 16 * 6, 1.0, 1.0 / 16 * 6, 1.0 - 1.0 / 16 * 2),
+            Shapes.box(1.0 - 1.0 / 16 * 4, 1.0 - 1.0 / 16 * 6, 1.0 / 16 * 2, 1.0, 1.0 - 1.0 / 16 * 2, 1.0 / 16 * 6),
+            Shapes.box(1.0 - 1.0 / 16 * 4, 1.0 - 1.0 / 16 * 6, 1.0 - 1.0 / 16 * 6, 1.0, 1.0 - 1.0 / 16 * 2, 1.0 - 1.0 / 16 * 2),
+
+            // EAST 1.0 / 16 * 4
+            Shapes.box(0.0, 1.0 / 16 * 2, 1.0 - 1.0 / 16 * 6, 1.0 / 16 * 4, 1.0 / 16 * 6, 1.0 - 1.0 / 16 * 2),
+            Shapes.box(0.0, 1.0 / 16 * 2, 1.0 / 16 * 2, 1.0 / 16 * 4, 1.0 / 16 * 6, 1.0 / 16 * 6),
+            Shapes.box(0.0, 1.0 - 1.0 / 16 * 6, 1.0 - 1.0 / 16 * 6, 1.0 / 16 * 4, 1.0 - 1.0 / 16 * 2, 1.0 - 1.0 / 16 * 2),
+            Shapes.box(0.0, 1.0 - 1.0 / 16 * 6, 1.0 / 16 * 2, 1.0 / 16 * 4, 1.0 - 1.0 / 16 * 2, 1.0 / 16 * 6)
+
+    );
 
     public void setItem(int index, ItemStack stack) {
         inv.set(index, stack.split(1));
@@ -125,23 +230,17 @@ public class LayingItemEntity extends BlockEntity {
     public VoxelShape getShape() {
         List<VoxelShape> tempShape = new ArrayList<>();
 
-        if (!isSlotEmpty(0)) {
-            tempShape.add(Shapes.box(0.125, 0.875, 0.125, 0.875, 1.0, 0.875f));
-        }
-        if (!isSlotEmpty(1)) {
-            tempShape.add(Shapes.box(0.125, 0.0, 0.125, 0.875, 0.125, 0.875f));
-        }
-        if (!isSlotEmpty(2)) {
-            tempShape.add(Shapes.box(0.125, 0.125, 0.875, 0.875, 0.875, 1.0f));
-        }
-        if (!isSlotEmpty(3)) {
-            tempShape.add(Shapes.box(0.125, 0.125, 0.0, 0.875, 0.875, 0.125f));
-        }
-        if (!isSlotEmpty(4)) {
-            tempShape.add(Shapes.box(0.875, 0.125, 0.125, 1.0, 0.875, 0.875f));
-        }
-        if (!isSlotEmpty(5)) {
-            tempShape.add(Shapes.box(0.0, 0.125, 0.125, 0.125, 0.875, 0.875f));
+        for (int i = 0; i < 6; i++) {
+            if (!isSlotEmpty(i)) {
+                if (!quad.get(i)) {
+                    if (isCuboid(i, 0)) tempShape.add(basicShapesBlock.get(i)); else tempShape.add(basicShapesItem.get(i));
+                } else {
+                    if (!isSubSlotEmpty(i, 0)) if (isCuboid(i, 0)) tempShape.add(basicQuadShapesBlock.get(i * 4)); else tempShape.add(basicQuadShapesItem.get(i * 4));
+                    if (!isSubSlotEmpty(i, 1)) if (isCuboid(i, 1)) tempShape.add(basicQuadShapesBlock.get(i * 4 + 1)); else tempShape.add(basicQuadShapesItem.get(i * 4 + 1));
+                    if (!isSubSlotEmpty(i, 2)) if (isCuboid(i, 2)) tempShape.add(basicQuadShapesBlock.get(i * 4 + 2)); else tempShape.add(basicQuadShapesItem.get(i * 4 + 2));
+                    if (!isSubSlotEmpty(i, 3)) if (isCuboid(i, 3)) tempShape.add(basicQuadShapesBlock.get(i * 4 + 3)); else tempShape.add(basicQuadShapesItem.get(i * 4 + 3));
+                }
+            }
         }
 
         Optional<VoxelShape> shape = tempShape.stream().reduce((v1, v2) -> Shapes.join(v1, v2, BooleanOp.OR));
@@ -149,6 +248,10 @@ public class LayingItemEntity extends BlockEntity {
     }
     //#endif
 
+
+    public boolean isSubSlotEmpty(int slot, int subslot) {
+        return this.inv.get(slot * 4 + subslot).isEmpty();
+    }
 
     public boolean isSlotEmpty(int slot) {
         for (int i = slot * 4; i < slot * 4 + 4; i++) {

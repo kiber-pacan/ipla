@@ -6,7 +6,7 @@ echo "-------------------------------"
 mkdir -p buildAllJars | true
 y=5
 
-for i in $(seq 7 $END); do
+for i in $(seq 13 $END); do
     sh gradlew :fabric:build :fabric:modrinth :fabric:curseforge -Pindex="$y"
 
     if [ "$y" -eq 6 ]; then
@@ -17,7 +17,6 @@ for i in $(seq 7 $END); do
         sh gradlew :forge:build :forge:modrinth :forge:curseforge  -Pindex="$y"
     fi
 
-    mv ./*/build/libs/cui-*-[!c]*-*[[:digit:]].jar "buildAllJars"
     ((y=y+1))
 done
 

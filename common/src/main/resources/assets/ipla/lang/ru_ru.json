@@ -18,5 +18,7 @@
   "key.ipla.place_item_key" : "Положить предмет",
   "key.ipla.rotate_item_key" : "Вращать предмет",
   "key.ipla.rotate_rounded_item_key" : "Округлённое вращение",
-  "key.ipla.hide_item_key" : "Скрыть хитбокс предмета"
+  "key.ipla.hide_item_key" : "Скрыть хитбокс предмета",
+
+  "block.ipla.l_item" : "Лежащий предмет"
 }

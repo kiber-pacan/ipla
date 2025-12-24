@@ -2,10 +2,14 @@ package com.akicater.neoforge;
 
 import com.akicater.blocks.LayingItem;
 import com.akicater.blocks.LayingItemEntity;
-import com.akicater.client.IPLA_ConfigScreen;
+import com.akicater.client.screen.IPLA_ConfigScreenBase;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
+#if MC_VER >= V1_21_11
+import net.minecraft.resources.Identifier;
+#else
 import net.minecraft.resources.ResourceLocation;
+#endif
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -41,7 +45,7 @@ public final class IplaNeoForge {
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITY_TYPES =
             DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, IPLA.MOD_ID);
 
-    public static final ResourceKey<Block> key = ResourceKey.create(Registries.BLOCK, #if MC_VER >= V1_21 ResourceLocation.fromNamespaceAndPath #else new ResourceLocation #endif(IPLA.MOD_ID, "l_item"));
+    public static final ResourceKey<Block> key = ResourceKey.create(Registries.BLOCK, #if MC_VER >= V1_21 #if MC_VER >= V1_21_11 Identifier #else ResourceLocation #endif .fromNamespaceAndPath #else new ResourceLocation #endif(IPLA.MOD_ID, "l_item"));
 
 
     public static final DeferredBlock<LayingItem> layingItemBlock = BLOCKS.register(
@@ -79,7 +83,7 @@ public final class IplaNeoForge {
         ModLoadingContext.get().registerExtensionPoint(
                 #if MC_VER >= V1_21
                 IConfigScreenFactory.class,
-                () -> (client, parent) -> new IPLA_ConfigScreen(parent)
+                () -> (client, parent) -> new IPLA_ConfigScreenBase(parent)
                 #else
                 ConfigScreenHandler.ConfigScreenFactory.class,
                 () -> new ConfigScreenHandler.ConfigScreenFactory(
@@ -97,7 +101,7 @@ public final class IplaNeoForge {
         IPLA.initializeServer();
 
         #if MC_VER >= V1_20_4
-        if (FMLEnvironment.dist.isClient()) {
+        if (FMLEnvironment #if MC_VER >= V1_21_9 .getDist() #else.dist #endif .isClient()) {
             IPLA.initializeClient();
         }
 

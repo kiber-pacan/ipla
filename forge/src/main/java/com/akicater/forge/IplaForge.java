@@ -2,7 +2,7 @@ package com.akicater.forge;
 
 
 import com.akicater.IPLA;
-import com.akicater.client.IPLA_ConfigScreen;
+import com.akicater.client.screen.IPLA_ConfigScreenBase;
 import dev.architectury.platform.forge.EventBuses;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.ConfigScreenHandler;
@@ -29,7 +29,7 @@ public final class IplaForge {
                 context.registerExtensionPoint(
                         ConfigScreenHandler.ConfigScreenFactory.class,
                         () -> new ConfigScreenHandler.ConfigScreenFactory(
-                                (client, screen) -> new IPLA_ConfigScreen(screen)
+                                (client, screen) -> new IPLA_ConfigScreenBase(screen)
                         )
                 )
         );

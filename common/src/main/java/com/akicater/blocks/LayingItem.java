@@ -30,7 +30,11 @@ import org.jetbrains.annotations.NotNull;
 
 #if MC_VER > V1_21
 import net.minecraft.util.RandomSource;
+
 #endif
+
+import java.util.List;
+
 
 public class LayingItem extends BaseEntityBlock implements SimpleWaterloggedBlock {
     #if MC_VER > V1_20_1 public static final MapCodec<LayingItem> CODEC = simpleCodec(LayingItem::new); #endif
@@ -141,34 +145,36 @@ public class LayingItem extends BaseEntityBlock implements SimpleWaterloggedBloc
         LayingItemEntity entity = (LayingItemEntity) level#if MC_VER < V1_21 .getChunk(pos) #endif.getBlockEntity(pos);
 
         if (entity != null) {
-            Pair<Integer, Integer> pair = IPLA.getIndexFromHit(hit, false);
-            int s = pair.getFirst();
-            int i = pair.getSecond();
 
-            if (!entity.quad.get(s)) i = 0;
-            if (entity.inv.get(s * 4 + i).isEmpty()) return InteractionResult.FAIL;
+            List<Integer> indices = IPLA.getPreciseIndexFromHit(entity, hit, false);
 
-            ItemStack itemStack = entity.inv.get(s * 4 + i).copy();
-            boolean success = player.addItem(itemStack);
+            for (int index : indices) {
+                if (entity.inv.get(index).isEmpty()) return InteractionResult.FAIL;
 
-            if (success && itemStack.isEmpty()) {
-                entity.inv.set(s * 4 + i, ItemStack.EMPTY);
-                entity.markDirty(player);
-                level.playSound(null, pos.getX(), pos.getY(), pos.getZ(), #if MC_VER >= V1_18_2 SoundEvents.BUNDLE_REMOVE_ONE #else SoundEvents.DISPENSER_FAIL #endif , SoundSource.BLOCKS, 1, 1.4f);
+                ItemStack itemStack = entity.inv.get(index).copy();
+                boolean success = player.addItem(itemStack);
 
-                if (entity.isEmpty()) {
-                    level.removeBlock(pos, false);
-                    entity.setRemoved();
-                } else if (entity.isSlotEmpty(s)) {
-                    entity.quad.set(s, false);
+                if (success && itemStack.isEmpty()) {
+                    entity.inv.set(index, ItemStack.EMPTY);
+                    entity.markDirty(player);
+                    level.playSound(null, pos.getX(), pos.getY(), pos.getZ(), #if MC_VER >= V1_18_2 SoundEvents.BUNDLE_REMOVE_ONE #else SoundEvents.DISPENSER_FAIL #endif , SoundSource.BLOCKS, 1, 1.4f);
+
+                    if (entity.isEmpty()) {
+                        level.removeBlock(pos, false);
+                        entity.setRemoved();
+                    } else if (entity.isSlotEmpty((int) index / 4)) {
+                        entity.quad.set((int) index / 4, false);
+                    }
+
+                    entity.markDirty(player);
+
+                    return InteractionResult.SUCCESS;
+                } else {
+                    return InteractionResult.PASS;
                 }
-
-                entity.markDirty(player);
-
-                return InteractionResult.SUCCESS;
-            } else {
-                return InteractionResult.PASS;
             }
+
+            return InteractionResult.PASS;
         } else {
             return InteractionResult.PASS;
         }

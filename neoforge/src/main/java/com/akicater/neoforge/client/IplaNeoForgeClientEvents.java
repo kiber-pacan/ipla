@@ -1,7 +1,6 @@
 package com.akicater.neoforge.client;
 
 import com.akicater.IPLA;
-import com.akicater.client.IPLA_ConfigScreen;
 import com.akicater.client.LayingItemBER_common;
 import com.akicater.neoforge.IplaNeoForge;
 import net.neoforged.bus.api.SubscribeEvent;
