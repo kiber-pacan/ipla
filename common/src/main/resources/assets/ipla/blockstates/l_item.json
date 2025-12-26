@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "waterlogged=true": { "model": "ipla:block/l_item" },
+    "waterlogged=false": { "model": "ipla:block/l_item" }
+  }
+}
+
