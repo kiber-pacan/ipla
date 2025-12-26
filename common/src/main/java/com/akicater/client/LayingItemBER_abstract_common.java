@@ -1,7 +1,6 @@
 package com.akicater.client;
 
 #if MC_VER >= V1_19_4
-import com.akicater.IPLA;
 import com.mojang.math.Axis;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.NonNullList;
@@ -38,6 +37,8 @@ import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
 import net.minecraft.client.renderer.state.CameraRenderState;
 #endif
+
+import com.akicater.IPLA;
 
 public abstract class #if MC_VER >= V1_21_9 LayingItemBER_abstract_common implements BlockEntityRenderer<LayingItemEntity, LayingItemBERS> #else LayingItemBER_abstract_common implements BlockEntityRenderer<LayingItemEntity> #endif {
     public LayingItemBER_abstract_common(BlockEntityRendererProvider.Context context) {
