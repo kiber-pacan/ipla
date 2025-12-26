@@ -47,7 +47,7 @@ public class LayingItemEntity extends BlockEntity {
 
 
     public LayingItemEntity(BlockPos pos, BlockState blockState) {
-        super(IPLA.lItemBlockEntity #if MC_VER < V1_21_3 .get() #endif, pos, blockState);
+        super(IPLA.lItemBlockEntity.get(), pos, blockState);
 
         inv = NonNullList.withSize(24, ItemStack.EMPTY);
 
@@ -252,6 +252,11 @@ public class LayingItemEntity extends BlockEntity {
     public boolean isSubSlotEmpty(int slot, int subslot) {
         return this.inv.get(slot * 4 + subslot).isEmpty();
     }
+
+    public boolean isSubSlotEmpty(int slot) {
+        return this.inv.get(slot).isEmpty();
+    }
+
 
     public boolean isSlotEmpty(int slot) {
         for (int i = slot * 4; i < slot * 4 + 4; i++) {
