@@ -1,16 +1,19 @@
 package com.akicater.network;
 
 #if MC_VER >= V1_21
+import com.akicater.blocks.LayingItem;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 
+import net.minecraft.world.phys.HitResult;
 import org.jetbrains.annotations.NotNull;
 #endif
 
 #if MC_VER >= V1_21_11
 import net.minecraft.resources.Identifier;
 #else
+import com.akicater.blocks.LayingItem;
 import net.minecraft.resources.ResourceLocation;
 #endif
 
@@ -34,10 +37,10 @@ import java.util.Random;
 
 import static com.akicater.IPLA.*;
 
-public #if MC_VER >= V1_21 record #else class #endif ItemPlacePayload #if MC_VER >= V1_21 (BlockPos pos, BlockHitResult hitResult) implements CustomPacketPayload #endif {
+public #if MC_VER >= V1_21 record #else class #endif ItemPlacePayload #if MC_VER >= V1_21 (BlockHitResult hitResult) implements CustomPacketPayload #endif {
     #if MC_VER >= V1_21
     public static final Type<ItemPlacePayload> TYPE = new Type<>(#if MC_VER >= V1_21_11 Identifier #else ResourceLocation #endif.fromNamespaceAndPath(MOD_ID, "place_item"));
-    public static final StreamCodec<FriendlyByteBuf, ItemPlacePayload> CODEC = StreamCodec.of((buf, value) -> buf.writeBlockPos(value.pos).writeBlockHitResult(value.hitResult), buf -> new ItemPlacePayload(buf.readBlockPos(), buf.readBlockHitResult()));
+    public static final StreamCodec<FriendlyByteBuf, ItemPlacePayload> CODEC = StreamCodec.of((buf, value) -> buf.writeBlockHitResult(value.hitResult), buf -> new ItemPlacePayload(buf.readBlockHitResult()));
 
     @Override
     public @NotNull Type<? extends CustomPacketPayload> type() {
@@ -45,78 +48,65 @@ public #if MC_VER >= V1_21 record #else class #endif ItemPlacePayload #if MC_VER
     }
     #endif
 
-    public static void receive(Player player, BlockPos pos, BlockHitResult hitResult) {
-        ItemStack stack = player.getMainHandItem();
-        if (stack == ItemStack.EMPTY) return;
-
-        Level level = player #if MC_VER < V1_20_1 .level #else .level() #endif;
-        BlockPos tempPos = pos;
-
-        if (level.getBlockState(pos).getBlock() != IPLA.lItemBlock #if MC_VER < V1_21_3 .get() #endif) {
-            tempPos = pos.relative(hitResult.getDirection(), 1);
-        }
-
-        Block replBlock = level.getBlockState(tempPos).getBlock();
-        int i = hitResult.getDirection().get3DDataValue();
-
+    public static float getDegrees() {
         Random random = new Random();
 
         float rotationDegrees = config.getRotationDegrees();
         float rotatedDegrees = random.nextFloat(180, 360) * (random.nextInt(0, 2) * 2 - 1);
-        float flooredDegrees = rotatedDegrees - (rotatedDegrees % rotationDegrees);
-        
-        if (replBlock == Blocks.AIR || replBlock == Blocks.WATER) {
-            BlockState state = IPLA.lItemBlock #if MC_VER < V1_21_3 .get() #endif.defaultBlockState();
 
-            if (replBlock == Blocks.WATER && level.getBlockState(tempPos).getValue(BlockStateProperties.LEVEL) == 0) {
-                state = state.setValue(BlockStateProperties.WATERLOGGED, true);
+        return rotatedDegrees - (rotatedDegrees % rotationDegrees);
+    }
+
+    public static void createBlockEntity(Level level, BlockState replacedBlockState, Block replacedBlock, BlockPos pos) {
+        BlockState state = IPLA.lItemBlock.get().defaultBlockState();
+
+        if (replacedBlock == Blocks.WATER && replacedBlockState.getValue(BlockStateProperties.LEVEL) == 0) {
+            state = state.setValue(BlockStateProperties.WATERLOGGED, true);
+        }
+
+        level.setBlockAndUpdate(pos, state);
+    }
+
+    public static void receive(Player player, BlockHitResult hitResult) {
+        ItemStack stack = player.getMainHandItem(); if (stack.isEmpty()) return; // Return if hand empty
+        Level level = player #if MC_VER < V1_20_1 .level #else .level() #endif;
+
+        BlockPos pos = hitResult.getBlockPos();
+
+        Block hittedBlock = level.getBlockState(pos).getBlock();
+        if (hittedBlock == Blocks.AIR || hittedBlock == Blocks.CAVE_AIR || hittedBlock == Blocks.WATER) return; // Preventing placing items in midair
+
+        BlockPos relativePos = pos.relative(hitResult.getDirection(), 1);
+
+        BlockState relativeBlockState = level.getBlockState(relativePos);
+        Block relativeBlock = relativeBlockState.getBlock();
+
+        boolean isEmpty = relativeBlock == Blocks.AIR || relativeBlock == Blocks.CAVE_AIR || relativeBlock == Blocks.WATER; // Checking if block is empty
+        boolean isLayingItem = relativeBlock instanceof LayingItem; // Checking if block is layi
+
+        if (isEmpty || isLayingItem) {
+            if (isEmpty) {
+                createBlockEntity(level, relativeBlockState, relativeBlock, relativePos);
             }
 
-            level.setBlockAndUpdate(tempPos, state);
+            LayingItemEntity entity = (LayingItemEntity) level #if MC_VER < V1_21 .getChunk(finalPos) #endif.getBlockEntity(relativePos);
+            int directionIndex = hitResult.getDirection().get3DDataValue();
 
-            LayingItemEntity entity = (LayingItemEntity)level#if MC_VER < V1_21 .getChunk(tempPos) #endif.getBlockEntity(tempPos);
+            if (entity == null) return;
+            boolean quad = entity.quad.get(directionIndex);
 
-            if (entity != null) {
-                if (player.isDiscrete()) {
-                    Pair<Integer,Integer> pair = IPLA.getIndexFromHit(hitResult, true);
+            int slot = getSlotFromHit(hitResult, true, quad || player.isDiscrete());
+            if (!((quad) ? entity.isSubSlotEmpty(slot) : entity.isSlotEmpty(directionIndex))) return;
+            float flooredDegrees = getDegrees();
 
-                    int x = pair.getFirst() * 4 + pair.getSecond();
+            entity.setItem(slot, stack);
+            entity.rot.set(slot, flooredDegrees);
 
-                    entity.setItem(x, stack);
-                    entity.quad.set(i, true);
-                    entity.rot.set(x, flooredDegrees);
-                } else {
-                    entity.setItem(i * 4, stack);
-                    entity.rot.set(i * 4, flooredDegrees);
-                }
+            entity.quad.set(directionIndex, player.isDiscrete() || quad);
 
-                level.playSound(null, pos.getX(), pos.getY(), pos.getZ(), SoundEvents.PAINTING_PLACE, SoundSource.BLOCKS, 1, 1.4f);
+            level.playSound(null, pos.getX(), pos.getY(), pos.getZ(), SoundEvents.PAINTING_PLACE, SoundSource.BLOCKS, 1, 1.4f);
 
-                entity.markDirty();
-            }
-        } else if (level.getBlockState(tempPos).getBlock() == IPLA.lItemBlock #if MC_VER < V1_21_3 .get() #endif) {
-            LayingItemEntity entity = (LayingItemEntity)level#if MC_VER < V1_21 .getChunk(tempPos) #endif.getBlockEntity(tempPos);
-
-            if (entity != null) {
-                boolean hitIsLItem = tempPos != pos;
-
-                Pair<Integer,Integer> pair = IPLA.getIndexFromHit(hitResult, hitIsLItem);
-                boolean quad = entity.quad.get(pair.getFirst()) || player.isDiscrete();
-
-                int x = pair.getFirst() * 4 + ((quad) ? pair.getSecond() : 0);
-
-                if(entity.inv.get(x).isEmpty()) {
-                    entity.setItem(x, stack);
-                    entity.rot.set(x, flooredDegrees);
-
-                    if (quad)
-                        entity.quad.set(pair.getFirst(), true);
-
-                    level.playSound(null, pos.getX(), pos.getY(), pos.getZ(), SoundEvents.PAINTING_PLACE, SoundSource.BLOCKS, 1, 1.4f);
-                }
-
-                entity.markDirty();
-            }
+            entity.markDirty();
         }
     }
 }
