@@ -89,7 +89,7 @@ public #if MC_VER >= V1_21 record #else class #endif ItemPlacePayload #if MC_VER
                 createBlockEntity(level, relativeBlockState, relativeBlock, relativePos);
             }
 
-            LayingItemEntity entity = (LayingItemEntity) level #if MC_VER < V1_21 .getChunk(finalPos) #endif.getBlockEntity(relativePos);
+            LayingItemEntity entity = (LayingItemEntity) level #if MC_VER < V1_21 .getChunk(relativePos) #endif.getBlockEntity(relativePos);
             int directionIndex = hitResult.getDirection().get3DDataValue();
 
             if (entity == null) return;
