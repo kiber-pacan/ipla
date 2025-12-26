@@ -45,6 +45,19 @@ public class LayingItem extends BaseEntityBlock implements SimpleWaterloggedBloc
         this.registerDefaultState(this.stateDefinition.any().setValue(WATERLOGGED, false));
     }
 
+    @Override
+    #if MC_VER >= V1_21_3
+    protected int getLightBlock(BlockState state) {
+        return 0;
+    }
+    #else
+    public int getLightBlock(BlockState state, BlockGetter level, BlockPos pos) {
+        return 0;
+    }
+    #endif
+
+
+
     #if MC_VER < V1_21_3
     @Override
     public @NotNull BlockState updateShape(BlockState state, Direction direction, BlockState neighborState, LevelAccessor level, BlockPos pos, BlockPos neighborPos)  {
@@ -67,7 +80,7 @@ public class LayingItem extends BaseEntityBlock implements SimpleWaterloggedBloc
 
     #if MC_VER >= V1_21_4
     protected @NotNull RenderShape getRenderShape(BlockState state) {
-        return RenderShape.INVISIBLE;
+        return RenderShape.MODEL;
     }
     #endif
 
