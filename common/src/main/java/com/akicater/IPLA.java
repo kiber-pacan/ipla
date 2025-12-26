@@ -91,9 +91,6 @@ public final class IPLA {
     public static #if MC_VER >= V1_21_3 BlockEntityType<LayingItemEntity> #else RegistrySupplier<BlockEntityType<LayingItemEntity>>  #endif lItemBlockEntity;
 
 
-    public static KeyMapping PLACE_ITEM_KEY;
-    public static KeyMapping ROTATE_ITEM_KEY;
-
     public static final Random RANDOM = new Random();
 
     public static #if MC_VER >= V1_21_11 Identifier #else ResourceLocation #endif ITEM_PLACE;
@@ -139,9 +136,12 @@ public final class IPLA {
 		#endif
     }
 
-    #if MC_VER >= V1_21_9 static KeyMapping.Category category = KeyMapping.Category.register(#if MC_VER >= V1_21_11 Identifier #else ResourceLocation #endif.fromNamespaceAndPath(MOD_ID, "ipla")); #endif
 
     public static void initializeClient() {
+        #if MC_VER >= V1_21_9 KeyMapping.Category category = KeyMapping.Category.register(#if MC_VER >= V1_21_11 Identifier #else ResourceLocation #endif.fromNamespaceAndPath(MOD_ID, "ipla")); #endif
+        KeyMapping PLACE_ITEM_KEY;
+        KeyMapping ROTATE_ITEM_KEY;
+
         PLACE_ITEM_KEY = new KeyMapping(
                 "key.ipla.place_item_key",
                 InputConstants.Type.KEYSYM,
