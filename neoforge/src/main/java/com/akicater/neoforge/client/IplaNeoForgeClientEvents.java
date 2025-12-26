@@ -17,7 +17,7 @@ public class IplaNeoForgeClientEvents {
     @SubscribeEvent
     public static void registerEntityRenderers(EntityRenderersEvent.RegisterRenderers event) {
 
-        event.registerBlockEntityRenderer(#if MC_VER >= V1_21_3 IplaNeoForge.layingItemEntity.get() #else IPLA.lItemBlockEntity.get() #endif,
+        event.registerBlockEntityRenderer(#if MC_VER >= V1_21_3 IPLA.lItemBlockEntity.get() #else IPLA.lItemBlockEntity.get() #endif,
                 LayingItemBER_common::new
         );
     }

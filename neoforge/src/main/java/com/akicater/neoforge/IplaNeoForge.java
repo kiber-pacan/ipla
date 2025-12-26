@@ -41,44 +41,30 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 @Mod(IPLA.MOD_ID)
 public final class IplaNeoForge {
     #if MC_VER >= V1_21_3
-    public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(IPLA.MOD_ID);
-    public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITY_TYPES =
-            DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, IPLA.MOD_ID);
+    public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITY_TYPES = DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, IPLA.MOD_ID);
 
-    public static final ResourceKey<Block> key = ResourceKey.create(Registries.BLOCK, #if MC_VER >= V1_21 #if MC_VER >= V1_21_11 Identifier #else ResourceLocation #endif .fromNamespaceAndPath #else new ResourceLocation #endif(IPLA.MOD_ID, "l_item"));
-
-
-    public static final DeferredBlock<LayingItem> layingItemBlock = BLOCKS.register(
-            "l_item",
-            () -> new LayingItem(BlockBehaviour.Properties.of()
-                    .instabreak()
-                    .dynamicShape()
-                    .noOcclusion()
-                    .setId(key)
-            ));
-
-    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<LayingItemEntity>> layingItemEntity = BLOCK_ENTITY_TYPES.register(
-            "l_item_entity",
-            () -> new BlockEntityType<>(
-                    LayingItemEntity::new,
-                    layingItemBlock.get()
-            )
-    );
     #endif
 
     public IplaNeoForge(IEventBus modBus, ModContainer container) {
-        #if MC_VER >= V1_21_3
-        BLOCKS.register(modBus);
-        BLOCK_ENTITY_TYPES.register(modBus);
-
-        modBus.addListener(this::onCommonSetup);
-        #else
         IPLA.initializeServer();
 
-        if (FMLEnvironment.dist.isClient()) {
+        #if MC_VER >= V1_21_3
+        IPLA.lItemBlockEntity = IPLA.blockEntities.register(
+                #if MC_VER >= V1_21 #if MC_VER >= V1_21_11 Identifier #else ResourceLocation #endif.fromNamespaceAndPath #else new ResourceLocation #endif(IPLA.MOD_ID, "l_item_entity"),
+                () -> new BlockEntityType<>(LayingItemEntity::new, IPLA.lItemBlock.get())
+        );
+
+        #endif
+
+        #if MC_VER >= V1_20_4
+        if (FMLEnvironment #if MC_VER >= V1_21_9 .getDist() #else.dist #endif .isClient()) {
             IPLA.initializeClient();
         }
+        #else
+            DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> IPLA::initializeClient);
         #endif
+
+
 
         ModLoadingContext.get().registerExtensionPoint(
                 #if MC_VER >= V1_21
@@ -90,24 +76,5 @@ public final class IplaNeoForge {
                 (client, parent) -> new IPLA_ConfigScreen(parent))
                 #endif
         );
-    }
-
-    private void onCommonSetup(final FMLCommonSetupEvent event) {
-        #if MC_VER >= V1_21_3
-        IPLA.lItemBlock = layingItemBlock.get();
-        IPLA.lItemBlockEntity = layingItemEntity.get();
-        #endif
-
-        IPLA.initializeServer();
-
-        #if MC_VER >= V1_20_4
-        if (FMLEnvironment #if MC_VER >= V1_21_9 .getDist() #else.dist #endif .isClient()) {
-            IPLA.initializeClient();
-        }
-
-        #else
-            DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> IPLA::initializeClient);
-        #endif
-
     }
 }

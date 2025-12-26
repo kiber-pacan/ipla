@@ -5,7 +5,16 @@ import com.akicater.IPLA;
 import com.akicater.client.screen.IPLA_ConfigScreenBase;
 import dev.architectury.platform.forge.EventBuses;
 import net.minecraftforge.api.distmarker.Dist;
+#if MC_VER >= V1_19_2 && MC_VER < V1_20_4
 import net.minecraftforge.client.ConfigScreenHandler;
+#else
+import net.minecraftforge.client.ConfigGuiHandler;
+#endif
+#if MC_VER >= V1_19_4
+
+#else
+
+#endif
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
@@ -15,42 +24,19 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 
 @Mod(IPLA.MOD_ID)
 public final class IplaForge {
-    public IplaForge(FMLJavaModLoadingContext context) {
-        EventBuses.registerModEventBus(IPLA.MOD_ID, context.getModEventBus());
+    public IplaForge() {
+        EventBuses.registerModEventBus(IPLA.MOD_ID, FMLJavaModLoadingContext.get().getModEventBus());
 
-        #if MC_VER > V1_18_2
-        // Initialization
         IPLA.initializeServer();
-
-        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> IPLA::initializeClient);
-
-        #if MC_VER >= V1_19_2 && MC_VER < V1_20_4
-        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () ->
-                context.registerExtensionPoint(
-                        ConfigScreenHandler.ConfigScreenFactory.class,
-                        () -> new ConfigScreenHandler.ConfigScreenFactory(
-                                (client, screen) -> new IPLA_ConfigScreenBase(screen)
-                        )
-                )
-        );
-        #endif
-        #endif
-    }
-    #if MC_VER <= V1_18_2
-    private void onCommonSetup(FMLCommonSetupEvent event) {
-        // Initialization
-        IPLA.initializeServer();
-
         DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> IPLA::initializeClient);
 
         DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () ->
                 ModLoadingContext.get().registerExtensionPoint(
-                        ConfigGuiHandler.ConfigGuiFactory.class,
-                        () -> new ConfigGuiHandler.ConfigGuiFactory(
-                                (client, screen) -> new IPLA_ConfigScreen(screen)
+                        #if MC_VER >= V1_19_2 ConfigScreenHandler.ConfigScreenFactory.class #else ConfigGuiHandler.ConfigGuiFactory.class #endif,
+                        () -> new #if MC_VER >= V1_19_2 ConfigScreenHandler.ConfigScreenFactory #else ConfigGuiHandler.ConfigGuiFactory #endif(
+                                (client, screen) -> new IPLA_ConfigScreenBase(screen)
                         )
                 )
         );
     }
-    #endif
 }

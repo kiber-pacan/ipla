@@ -26,30 +26,12 @@ public final class IplaFabric implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        IPLA.initializeServer();
         #if MC_VER >= V1_21_3
-        ResourceKey<Block> key = ResourceKey.create(Registries.BLOCK, #if MC_VER >= V1_21 #if MC_VER >= V1_21_11 Identifier #else ResourceLocation #endif.fromNamespaceAndPath #else new ResourceLocation #endif(IPLA.MOD_ID, "l_item"));
-
-        IPLA.lItemBlock = IPLA.blocks.register(
-                #if MC_VER >= V1_21 #if MC_VER >= V1_21_11 Identifier #else ResourceLocation #endif.fromNamespaceAndPath #else new ResourceLocation #endif(IPLA.MOD_ID, "l_item"),
-                () -> new LayingItem(BlockBehaviour.Properties.of()
-                        .lightLevel(state -> 0)
-                        .isSuffocating((s, l, p) -> false)
-                        .isViewBlocking((s, l, p) -> false)
-                        .instabreak()
-                        .dynamicShape()
-                        .noOcclusion()
-                        .noTerrainParticles()
-                        #if MC_VER >= V1_21_3
-                        .setId(key)
-                        #endif
-                )
-        ).get();
-
         IPLA.lItemBlockEntity = IPLA.blockEntities.register(
                 #if MC_VER >= V1_21 #if MC_VER >= V1_21_11 Identifier #else ResourceLocation #endif.fromNamespaceAndPath #else new ResourceLocation #endif(IPLA.MOD_ID, "l_item_entity"),
-                () -> FabricBlockEntityTypeBuilder.create(LayingItemEntity::new, IPLA.lItemBlock).build(null)
-        ).get();
+                () -> FabricBlockEntityTypeBuilder.create(LayingItemEntity::new, IPLA.lItemBlock.get()).build(null)
+        );
         #endif
-        IPLA.initializeServer();
     }
 }
