@@ -28,6 +28,8 @@ import net.minecraft.world.phys.Vec3;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Logger;
+
 import com.akicater.blocks.LayingItemEntity;
 
 #if MC_VER >= V1_21_9
@@ -68,8 +70,6 @@ public abstract class #if MC_VER >= V1_21_9 LayingItemBER_abstract_common implem
             )
     );
     #endif
-
-
 
     public static Vec3 pos1 = new Vec3(0.5F, 0.5F, 0);
 
@@ -115,24 +115,23 @@ public abstract class #if MC_VER >= V1_21_9 LayingItemBER_abstract_common implem
     {
         ItemRenderer itemRenderer = Minecraft.getInstance().getItemRenderer();
 
-        for (int s = 0; s < 6; s++) {
-            if (entity.quad.get(s)) {
+        for (int slot = 0; slot < 6; slot++) {
+            if (entity.quad.get(slot)) {
                 float iSize = itemSize * absoluteSize / IPLA.config.itemScale;
                 float bSize = blockSize * absoluteSize / IPLA.config.blockScale;
 
                 for (int i = 0; i < 4; i++) {
-                    if (!entity.inv.get(s * 4 + i).isEmpty()) {
+                    if (!entity.inv.get(slot * 4 + i).isEmpty()) {
                         #if MC_VER >= V1_21_9
-                        ItemStackRenderState irs = entity.inv.get(s * 4 + i); // HAHA IRS
+                        ItemStackRenderState irs = entity.inv.get(slot * 4 + i); // HAHA IRS
                         #else
-                        ItemStack stack = entity.inv.get(s * 4 + i);
+                        ItemStack stack = entity.inv.get(slot * 4 + i);
                         #endif
-
 
                         poseStack.pushPose();
 
-                        boolean fullBlock = #if MC_VER >= V1_21_9 entity.isFullBlock.get(s * 4 + i); #else stack.getItem() instanceof BlockItem && ((BlockItem) stack.getItem()).getBlock().defaultBlockState().isCollisionShapeFullBlock(entity.getLevel(), entity.getBlockPos()); #endif
-                        manipStack(poseStack, entity, fullBlock, oldRendering, iSize, bSize, s, i, #if MC_VER >= V1_21_9 Minecraft.getInstance().getDeltaTracker().getRealtimeDeltaTicks() * 4 #else dt #endif);
+                        boolean fullBlock = #if MC_VER >= V1_21_9 entity.isFullBlock.get(slot * 4 + i); #else stack.getItem() instanceof BlockItem && ((BlockItem) stack.getItem()).getBlock().defaultBlockState().isCollisionShapeFullBlock(entity.getLevel(), entity.getBlockPos()); #endif
+                        manipStack(poseStack, entity, fullBlock, oldRendering, iSize, bSize, slot, i, #if MC_VER >= V1_21_9 Minecraft.getInstance().getDeltaTracker().getRealtimeDeltaTicks() * 4 #else dt #endif);
 
                         if ((fullBlock)) {
                             poseStack.scale(bSize, bSize, bSize);
@@ -150,20 +149,20 @@ public abstract class #if MC_VER >= V1_21_9 LayingItemBER_abstract_common implem
                     }
                 }
             } else {
-                if (!entity.inv.get(s * 4).isEmpty()) {
+                if (!entity.inv.get(slot * 4).isEmpty()) {
                     float iSize = itemSize * absoluteSize;
                     float bSize = blockSize * absoluteSize;
 
                     #if MC_VER >= V1_21_9
-                    ItemStackRenderState irs = entity.inv.get(s * 4); // HAHA IRS
+                    ItemStackRenderState irs = entity.inv.get(slot * 4); // HAHA IRS
                     #else
-                    ItemStack stack = entity.inv.get(s * 4);
+                    ItemStack stack = entity.inv.get(slot * 4);
                     #endif
 
                     poseStack.pushPose();
 
-                    boolean fullBlock = #if MC_VER >= V1_21_9 entity.isFullBlock.get(s * 4); #else stack.getItem() instanceof BlockItem && ((BlockItem) stack.getItem()).getBlock().defaultBlockState().isCollisionShapeFullBlock(entity.getLevel(), entity.getBlockPos()); #endif
-                    manipStack(poseStack, entity, fullBlock, oldRendering, iSize, bSize, s, 4, #if MC_VER >= V1_21_9 Minecraft.getInstance().getDeltaTracker().getRealtimeDeltaTicks() * 4 #else dt #endif);
+                    boolean fullBlock = #if MC_VER >= V1_21_9 entity.isFullBlock.get(slot * 4); #else stack.getItem() instanceof BlockItem && ((BlockItem) stack.getItem()).getBlock().defaultBlockState().isCollisionShapeFullBlock(entity.getLevel(), entity.getBlockPos()); #endif
+                    manipStack(poseStack, entity, fullBlock, oldRendering, iSize, bSize, slot, 4, #if MC_VER >= V1_21_9 Minecraft.getInstance().getDeltaTracker().getRealtimeDeltaTicks() * 4 #else dt #endif);
 
                     if ((fullBlock)) {
                         poseStack.scale(bSize, bSize, bSize);
@@ -187,17 +186,15 @@ public abstract class #if MC_VER >= V1_21_9 LayingItemBER_abstract_common implem
         return a * (1.0f - f) + (b * f);
     }
 
-
-
-    public void manipStack(PoseStack poseStack, #if MC_VER >= V1_21_9 LayingItemBERS #else LayingItemEntity #endif entity, boolean fullBlock, boolean oldRendering, float iSize, float bSize, int s, int i, float dt) {
+    public void manipStack(PoseStack poseStack, #if MC_VER >= V1_21_9 LayingItemBERS #else LayingItemEntity #endif entity, boolean fullBlock, boolean oldRendering, float iSize, float bSize, int slot, int i, float dt) {
         poseStack.translate(0.5, 0.5, 0.5);
 
-        poseStack.mulPose(rot.get(s));
+        poseStack.mulPose(rot.get(slot));
 
         boolean quad = i < 4;
-        int x = s * 4 + ((quad) ? i : 0);
+        int x = slot * 4 + ((quad) ? i : 0);
 
-        float rotation = #if MC_VER >= V1_19_4 Math.lerp #else lerp #endif(entity.lastRot.get(x), entity.rot.get(x), 0.1f * dt);
+        float degrees = #if MC_VER >= V1_19_4 Math.lerp #else lerp #endif(entity.lastRot.get(x), entity.rot.get(x), 0.1f * dt);
 
         if (fullBlock && !oldRendering) {
             poseStack.translate(-0.5, -0.5, -0.5);
@@ -209,31 +206,31 @@ public abstract class #if MC_VER >= V1_21_9 LayingItemBER_abstract_common implem
             }
 
             #if MC_VER >= V1_19_4
-            poseStack.mulPose(Axis.ZP.rotationDegrees(rotation));
+            poseStack.mulPose(Axis.ZP.rotationDegrees(degrees));
             poseStack.mulPose(Axis.XP.rotationDegrees(90));
             #else
-            poseStack.mulPose(Vector3f.ZP.rotationDegrees(rotation));
+            poseStack.mulPose(Vector3f.ZP.rotationDegrees(degrees));
             poseStack.mulPose(Vector3f.XP.rotationDegrees(90));
             #endif
         } else {
             poseStack.translate(-0.5, -0.5, -0.5);
 
             if (quad) {
-                poseStack.translate(0.25f + (((i + 1) % 2 == 0) ? 0.5f : 0), 0.25f + ((i > 1) ? 0.5f : 0), 0.03125f * iSize);
+                poseStack.translate(0.25 + (((i + 1) % 2 == 0) ? 0.5f : 0), 0.25 + ((i > 1) ? 0.5 : 0), 0.03125 * iSize);
             } else {
-                poseStack.translate(pos1.x, pos1.y, 0.03125f * iSize);
+                poseStack.translate(pos1.x, pos1.y, 0.03125 * iSize - 0.0001);
             }
 
             #if MC_VER >= V1_19_4
-            poseStack.mulPose(Axis.ZP.rotationDegrees(rotation));
+            poseStack.mulPose(Axis.ZP.rotationDegrees(degrees));
             poseStack.mulPose(Axis.YP.rotationDegrees(180));
             #else
-            poseStack.mulPose(Vector3f.ZP.rotationDegrees(rotation));
+            poseStack.mulPose(Vector3f.ZP.rotationDegrees(degrees));
             poseStack.mulPose(Vector3f.YP.rotationDegrees(180));
             #endif
         }
 
-        entity.lastRot.set(x, rotation);
+        entity.lastRot.set(x, degrees);
     }
 
 
