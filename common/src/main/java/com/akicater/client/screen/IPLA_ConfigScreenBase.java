@@ -5,11 +5,17 @@ import com.akicater.IPLA;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 #endif
+
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Checkbox;
 
 import net.minecraft.client.gui.screens.Screen;
+
+#if MC_VER < V1_20_1
+import com.mojang.blaze3d.vertex.PoseStack;
+#endif
 
 
 
@@ -145,7 +151,9 @@ public class IPLA_ConfigScreenBase extends Screen {
         );
         #else
         this.addRenderableWidget(new Button(x, y, widthButton, heightButton, #if MC_VER >= V1_19_2 Component.literal #else new TextComponent #endif ("Scale settings"),
-            b -> Minecraft.getInstance().screen = new IPLA_ConfigScreenScale(this)
+            b -> {
+                Minecraft.getInstance().setScreen(new IPLA_ConfigScreenScale(this));
+            }
         ));
         #endif
 

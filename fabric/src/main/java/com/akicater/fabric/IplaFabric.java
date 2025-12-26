@@ -31,7 +31,7 @@ public final class IplaFabric implements ModInitializer {
 
         IPLA.lItemBlock = IPLA.blocks.register(
                 #if MC_VER >= V1_21 #if MC_VER >= V1_21_11 Identifier #else ResourceLocation #endif.fromNamespaceAndPath #else new ResourceLocation #endif(IPLA.MOD_ID, "l_item"),
-                () -> new LayingItem(BlockBehaviour.Properties.ofFullCopy(Blocks.AIR)
+                () -> new LayingItem(BlockBehaviour.Properties.of()
                         .lightLevel(state -> 0)
                         .isSuffocating((s, l, p) -> false)
                         .isViewBlocking((s, l, p) -> false)

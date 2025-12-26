@@ -10,6 +10,9 @@ import net.minecraft.client.gui.components.Checkbox;
 
 import net.minecraft.client.gui.screens.Screen;
 
+#if MC_VER < V1_20_1
+import com.mojang.blaze3d.vertex.PoseStack;
+#endif
 
 
 import static com.akicater.IPLA.config;
@@ -42,6 +45,7 @@ public class IPLA_ConfigScreenScale extends Screen {
 
     public IPLA_ConfigScreenScale(Screen parent) {
         super(TITLE);
+
         this.parent = parent;
 
         this.blockScale = config.blockScale;
@@ -58,6 +62,8 @@ public class IPLA_ConfigScreenScale extends Screen {
 
     @Override
     protected void init() {
+        super.init();
+
         int widthButton = 200;
         int heightButton = 20;
         int x = (this.width - widthButton) / 2;

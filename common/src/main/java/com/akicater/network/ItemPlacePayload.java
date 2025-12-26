@@ -64,9 +64,7 @@ public #if MC_VER >= V1_21 record #else class #endif ItemPlacePayload #if MC_VER
         float rotationDegrees = config.getRotationDegrees();
         float rotatedDegrees = random.nextFloat(180, 360) * (random.nextInt(0, 2) * 2 - 1);
         float flooredDegrees = rotatedDegrees - (rotatedDegrees % rotationDegrees);
-
-        LOGGER.info(String.valueOf(rotatedDegrees));
-
+        
         if (replBlock == Blocks.AIR || replBlock == Blocks.WATER) {
             BlockState state = IPLA.lItemBlock #if MC_VER < V1_21_3 .get() #endif.defaultBlockState();
 
