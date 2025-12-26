@@ -9,7 +9,6 @@ import com.akicater.network.ItemRotatePayload;
 import dev.architectury.event.events.client.ClientLifecycleEvent;
 import com.google.common.base.Suppliers;
 import com.mojang.blaze3d.platform.InputConstants;
-import com.mojang.datafixers.util.Pair;
 import dev.architectury.event.EventResult;
 import dev.architectury.event.events.client.ClientRawInputEvent;
 import dev.architectury.event.events.client.ClientTickEvent;
@@ -19,22 +18,27 @@ import dev.architectury.registry.client.keymappings.KeyMappingRegistry;
 import dev.architectury.registry.registries.Registrar;
 import dev.architectury.registry.registries.RegistrySupplier;
 import io.netty.buffer.Unpooled;
-import net.fabricmc.loader.impl.lib.sat4j.core.Vec;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Registry;
-import net.minecraft.network.FriendlyByteBuf;
 #if MC_VER >= V1_21_11
 import net.minecraft.resources.Identifier;
 #else
+import net.minecraft.core.Registry;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 #endif
+
+#if MC_VER >= V1_21_3
+import net.minecraft.resources.ResourceKey;
+#endif
+
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.item.BlockItem;
+#if MC_VER >= V1_20_1
+import net.minecraft.world.item.CreativeModeTab;
+#endif
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -75,20 +79,23 @@ public final class IPLA {
     public static IPLA_Config config = new IPLA_Config();
 
     #if MC_VER >= V1_19_4
-    public static final Supplier<RegistrarManager> MANAGER = Suppliers.memoize(() -> RegistrarManager.get(MOD_ID));
-
-    public static final Registrar<Block> blocks = MANAGER.get().get(Registries.BLOCK);
-    public static final Registrar<BlockEntityType<?>> blockEntities = MANAGER.get().get(Registries.BLOCK_ENTITY_TYPE);
+        public static final Supplier<RegistrarManager> MANAGER = Suppliers.memoize(() -> RegistrarManager.get(MOD_ID));
+        public static final Registrar<Block> blocks = MANAGER.get().get(Registries.BLOCK);
+        public static final Registrar<Item> items = MANAGER.get().get(Registries.ITEM);
+        public static final Registrar<BlockEntityType<?>> blockEntities = MANAGER.get().get(Registries.BLOCK_ENTITY_TYPE);
+        #if MC_VER >= V1_20_1
+        public static final Registrar<CreativeModeTab> itemGroups = MANAGER.get().get(Registries.CREATIVE_MODE_TAB);
+        #endif
     #else
     public static final Supplier<Registries> MANAGER = Suppliers.memoize(() -> Registries.get(MOD_ID));
-
-    public static final Registrar<Block> blocks = MANAGER.get().get(Registry.BLOCK);
-    public static final Registrar<BlockEntityType<?>> blockEntities = MANAGER.get().get(Registry.BLOCK_ENTITY_TYPE);
+    public static final Registrar<Block> blocks = MANAGER.get().get(Registry.BLOCK_REGISTRY);
+    public static final Registrar<Item> items = MANAGER.get().get(Registry.ITEM_REGISTRY);
+    public static final Registrar<BlockEntityType<?>> blockEntities = MANAGER.get().get(Registry.BLOCK_ENTITY_TYPE_REGISTRY);
     #endif
 
-    public static #if MC_VER < V1_21_3 RegistrySupplier<LayingItem> #else LayingItem #endif lItemBlock;
+    public static RegistrySupplier<LayingItem> lItemBlock;
 
-    public static #if MC_VER >= V1_21_3 BlockEntityType<LayingItemEntity> #else RegistrySupplier<BlockEntityType<LayingItemEntity>>  #endif lItemBlockEntity;
+    public static RegistrySupplier<BlockEntityType<LayingItemEntity>> lItemBlockEntity;
 
 
     public static final Random RANDOM = new Random();
@@ -98,19 +105,26 @@ public final class IPLA {
 
 
     public static void initializeServer() {
-        #if MC_VER < V1_21_3
+        #if MC_VER >= V1_21_3 ResourceKey<Block> key = ResourceKey.create(Registries.BLOCK, #if MC_VER >= V1_21 #if MC_VER >= V1_21_11 Identifier #else ResourceLocation #endif.fromNamespaceAndPath #else new ResourceLocation #endif(IPLA.MOD_ID, "l_item")); #endif
+
         lItemBlock = blocks.register(
-                #if MC_VER >= V1_21 ResourceLocation.fromNamespaceAndPath #else new ResourceLocation #endif(MOD_ID, "l_item"),
+                #if MC_VER >= V1_21 #if MC_VER >= V1_21_11 Identifier #else ResourceLocation #endif .fromNamespaceAndPath #else new ResourceLocation #endif(MOD_ID, "l_item"),
                 () -> new LayingItem(BlockBehaviour.Properties.of(#if MC_VER < V1_20_1 Material.AIR #endif)
                         .instabreak()
                         .dynamicShape()
                         .noOcclusion()
+                        #if MC_VER >= V1_20_4
+                        .noTerrainParticles()
+                        #endif
+                        .isSuffocating((state, level, pos) -> false)
+                        .isViewBlocking((state, level, pos) -> false)
+                        .isRedstoneConductor((state, level, pos) -> false)
                         #if MC_VER >= V1_21_3
                         .setId(key)
                         #endif
                 )
         );
-
+        #if MC_VER < V1_21_3
         lItemBlockEntity = blockEntities.register(
                 #if MC_VER >= V1_21 ResourceLocation.fromNamespaceAndPath #else new ResourceLocation #endif(MOD_ID, "l_item_entity"),
                 () -> BlockEntityType.Builder.of(LayingItemEntity::new, lItemBlock.get()).build(null)
@@ -119,7 +133,7 @@ public final class IPLA {
 
         #if MC_VER >= V1_21
         NetworkManager.registerReceiver(NetworkManager.Side.C2S, ItemPlacePayload.TYPE, ItemPlacePayload.CODEC, (buf, context) ->
-                ItemPlacePayload.receive(context.getPlayer(), buf.pos(), buf.hitResult())
+                ItemPlacePayload.receive(context.getPlayer(), buf.hitResult())
         );
 
         NetworkManager.registerReceiver(NetworkManager.Side.C2S, ItemRotatePayload.TYPE, ItemRotatePayload.CODEC, (buf, context) ->
@@ -129,7 +143,7 @@ public final class IPLA {
         ITEM_PLACE = new ResourceLocation(MOD_ID, "place_item");
         ITEM_ROTATE = new ResourceLocation(MOD_ID, "rotate_item");
 
-        NetworkManager.registerReceiver(NetworkManager.Side.C2S, ITEM_PLACE, (buf, context) -> ItemPlacePayload.receive(context.getPlayer(), buf.readBlockPos(), buf.readBlockHitResult()));
+        NetworkManager.registerReceiver(NetworkManager.Side.C2S, ITEM_PLACE, (buf, context) -> ItemPlacePayload.receive(context.getPlayer(), buf.readBlockHitResult()));
 
         NetworkManager.registerReceiver(NetworkManager.Side.C2S, ITEM_ROTATE, (buf, context) -> ItemRotatePayload.receive(context.getPlayer(), buf.readInt(), buf.readBlockHitResult()));
 
@@ -161,17 +175,22 @@ public final class IPLA {
 
         ClientTickEvent.CLIENT_POST.register(client -> {
             if (PLACE_ITEM_KEY.consumeClick()) {
-                if (client.hitResult instanceof BlockHitResult && client.player.getItemInHand(InteractionHand.MAIN_HAND) != ItemStack.EMPTY && Minecraft.getInstance().level.getBlockState(((BlockHitResult) client.hitResult).getBlockPos()).getBlock() != Blocks.AIR) {
-					#if MC_VER < V1_21
+                if (client.hitResult instanceof BlockHitResult) {
+                    assert Minecraft.getInstance().level != null;
+                    Block hittedBlock = Minecraft.getInstance().level.getBlockState(((BlockHitResult) client.hitResult).getBlockPos()).getBlock();
+                    assert client.player != null;
+                    ItemStack stack = client.player.getItemInHand(InteractionHand.MAIN_HAND);
+
+                    if (stack == ItemStack.EMPTY && (hittedBlock == Blocks.AIR || hittedBlock == Blocks.CAVE_AIR)) return;
+
+                    #if MC_VER < V1_21
                     FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
 
-                    buf.writeBlockPos(((BlockHitResult) client.hitResult).getBlockPos());
                     buf.writeBlockHitResult((BlockHitResult) client.hitResult);
 
                     NetworkManager.sendToServer(ITEM_PLACE, buf);
 					#else
                     ItemPlacePayload payload = new ItemPlacePayload(
-                            ((BlockHitResult) client.hitResult).getBlockPos(),
                             (BlockHitResult) client.hitResult
                     );
 
@@ -183,11 +202,10 @@ public final class IPLA {
 
         ClientRawInputEvent.MOUSE_SCROLLED.register((Minecraft minecraft, #if MC_VER > V1_20_1 double x, #endif double y) -> {
             BlockHitResult hitResult = getBlockHitResult(minecraft.hitResult);
-            boolean rounded = false;
 
 
             if (hitResult != null && ROTATE_ITEM_KEY.isDown()) {
-                if (minecraft.level != null && minecraft.level.getBlockState(hitResult.getBlockPos()).getBlock() == lItemBlock #if MC_VER < V1_21_3 .get() #endif) {
+                if (minecraft.level != null && minecraft.level.getBlockState(hitResult.getBlockPos()).getBlock() instanceof LayingItem) {
                     #if MC_VER < V1_21
                     FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
 
@@ -205,14 +223,11 @@ public final class IPLA {
                         NetworkManager.sendToServer(payload);
                     #endif
 
-                    if (#if MC_VER < V1_20_4 Platform.isForge() #else Platform.isForgeLike() #endif)
-                        return EventResult.interruptFalse();
-                    else
-                        return EventResult.interruptTrue();
+
                 }
             }
 
-            return EventResult.interruptDefault();
+            return EventResult.interruptFalse();
         });
 
         ClientLifecycleEvent.CLIENT_STARTED.register((minecraft) -> {
@@ -268,7 +283,7 @@ public final class IPLA {
 
     static final double EPS = 1e-6;
 
-    static boolean contains(double x, double y, double z, AABB box) {
+    private static boolean contains(double x, double y, double z, AABB box) {
         return x >= box.minX - EPS && x <= box.maxX + EPS
                 && y >= box.minY - EPS && y <= box.maxY + EPS
                 && z >= box.minZ - EPS && z <= box.maxZ + EPS;
@@ -286,7 +301,23 @@ public final class IPLA {
         return -1;
     }
 
-    public static Pair<Integer, Integer> getIndexFromHit(BlockHitResult hit, Boolean empty) {
+    private static int getSubSlotFromPos(int slot, double x, double y, double z) {
+        switch (slot) {
+            case 0, 1 -> {
+                return (slot == 1) ? getIndexFromXY(x, 1 - z) : getIndexFromXY(x, z);
+            }
+            case 2, 3 -> {
+                return (slot == 2) ? getIndexFromXY(1 - x, y) : getIndexFromXY(x, y);
+            }
+            case 4, 5 -> {
+                return (slot == 5) ? getIndexFromXY(1 - z, y) : getIndexFromXY(z, y);
+            }
+        }
+
+        return 0;
+    }
+
+    public static int getSlotFromHit(BlockHitResult hit, boolean empty, boolean quad) {
         BlockPos blockPos = hit.getBlockPos();
         Vec3 pos = hit.getLocation();
 
@@ -302,19 +333,7 @@ public final class IPLA {
             slot = getSlotFromShape(x, y, z);
         }
 
-        switch (slot) {
-            case 0, 1 -> {
-                return new Pair<>(slot, ((slot == 1) ? getIndexFromXY(x, 1 - z) : getIndexFromXY(x, z)));
-            }
-            case 2, 3 -> {
-                return new Pair<>(slot, ((slot == 2) ? getIndexFromXY(1 - x, y) : getIndexFromXY(x, y)));
-            }
-            case 4, 5 -> {
-                return new Pair<>(slot, ((slot == 5) ? getIndexFromXY(1 - z, y) : getIndexFromXY(z, y)));
-            }
-        }
-
-        return new Pair<>(0, 0);
+        return slot * 4 + ((quad) ? getSubSlotFromPos(slot, x, y, z) : 0);
     }
 
     public static List<Integer> getPreciseIndexFromHit(LayingItemEntity entity, BlockHitResult hit, Boolean empty) {
