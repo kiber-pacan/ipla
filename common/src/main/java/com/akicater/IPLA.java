@@ -133,23 +133,22 @@ public final class IPLA {
 
         #if MC_VER >= V1_21
         NetworkManager.registerReceiver(NetworkManager.Side.C2S, ItemPlacePayload.TYPE, ItemPlacePayload.CODEC, (buf, context) ->
-                ItemPlacePayload.receive(context.getPlayer(), buf.hitResult())
+                ItemPlacePayload.receive(context.getPlayer(), buf.pos(), buf.hitResult())
         );
 
         NetworkManager.registerReceiver(NetworkManager.Side.C2S, ItemRotatePayload.TYPE, ItemRotatePayload.CODEC, (buf, context) ->
-                ItemRotatePayload.receive(context.getPlayer(), buf.y(), buf.hitResult())
+                ItemRotatePayload.receive(context.getPlayer(), buf.y(), buf.rotationDegrees(), buf.hitResult())
         );
         #else
         ITEM_PLACE = new ResourceLocation(MOD_ID, "place_item");
         ITEM_ROTATE = new ResourceLocation(MOD_ID, "rotate_item");
 
-        NetworkManager.registerReceiver(NetworkManager.Side.C2S, ITEM_PLACE, (buf, context) -> ItemPlacePayload.receive(context.getPlayer(), buf.readBlockHitResult()));
+        NetworkManager.registerReceiver(NetworkManager.Side.C2S, ITEM_PLACE, (buf, context) -> ItemPlacePayload.receive(context.getPlayer(), buf.readBlockPos(), buf.readBlockHitResult()));
 
-        NetworkManager.registerReceiver(NetworkManager.Side.C2S, ITEM_ROTATE, (buf, context) -> ItemRotatePayload.receive(context.getPlayer(), buf.readInt(), buf.readBlockHitResult()));
+        NetworkManager.registerReceiver(NetworkManager.Side.C2S, ITEM_ROTATE, (buf, context) -> ItemRotatePayload.receive(context.getPlayer(), buf.readInt(), buf.readFloat(), buf.readBlockHitResult()));
 
 		#endif
     }
-
 
     public static void initializeClient() {
         #if MC_VER >= V1_21_9 KeyMapping.Category category = KeyMapping.Category.register(#if MC_VER >= V1_21_11 Identifier #else ResourceLocation #endif.fromNamespaceAndPath(MOD_ID, "ipla")); #endif
@@ -186,11 +185,13 @@ public final class IPLA {
                     #if MC_VER < V1_21
                     FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
 
+                    buf.writeBlockPos(((BlockHitResult) client.hitResult).getBlockPos());
                     buf.writeBlockHitResult((BlockHitResult) client.hitResult);
 
                     NetworkManager.sendToServer(ITEM_PLACE, buf);
 					#else
                     ItemPlacePayload payload = new ItemPlacePayload(
+                            ((BlockHitResult) client.hitResult).getBlockPos(),
                             (BlockHitResult) client.hitResult
                     );
 
@@ -206,10 +207,13 @@ public final class IPLA {
 
             if (hitResult != null && ROTATE_ITEM_KEY.isDown()) {
                 if (minecraft.level != null && minecraft.level.getBlockState(hitResult.getBlockPos()).getBlock() instanceof LayingItem) {
+                    float rotationDegrees = config.getRotationDegrees();
+
                     #if MC_VER < V1_21
                     FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
 
                     buf.writeInt((int) y);
+                    buf.writeFloat(rotationDegrees);
                     buf.writeBlockHitResult(hitResult);
 
                     NetworkManager.sendToServer(ITEM_ROTATE, buf);
@@ -217,17 +221,21 @@ public final class IPLA {
                     #else
                         ItemRotatePayload payload = new ItemRotatePayload(
                                 (int) y,
+                                rotationDegrees,
                                 hitResult
                         );
 
                         NetworkManager.sendToServer(payload);
                     #endif
 
-
+                    if (#if MC_VER < V1_20_4 Platform.isForge() #else Platform.isForgeLike() #endif) {
+                        return EventResult.interruptFalse();
+                    } else {
+                        return EventResult.interruptTrue();
+                    }
                 }
             }
-
-            return EventResult.interruptFalse();
+            return EventResult.interruptDefault();
         });
 
         ClientLifecycleEvent.CLIENT_STARTED.register((minecraft) -> {

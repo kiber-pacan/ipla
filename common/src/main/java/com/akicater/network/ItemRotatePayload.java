@@ -24,10 +24,10 @@ import java.util.List;
 
 import static com.akicater.IPLA.*;
 
-public #if MC_VER >= V1_21 record #else class #endif ItemRotatePayload #if MC_VER >= V1_21 (int y, BlockHitResult hitResult) implements CustomPacketPayload #endif {
+public #if MC_VER >= V1_21 record #else class #endif ItemRotatePayload #if MC_VER >= V1_21 (int y, float rotationDegrees, BlockHitResult hitResult) implements CustomPacketPayload #endif {
     #if MC_VER >= V1_21
     public static final Type<ItemRotatePayload> TYPE = new Type<>(#if MC_VER >= V1_21_11 Identifier #else ResourceLocation #endif.fromNamespaceAndPath(MOD_ID, "rotate_item"));
-    public static final StreamCodec<FriendlyByteBuf, ItemRotatePayload> CODEC = StreamCodec.of((buf, value) -> buf.writeInt(value.y).writeBlockHitResult(value.hitResult), buf -> new ItemRotatePayload(buf.readInt(), buf.readBlockHitResult()));
+    public static final StreamCodec<FriendlyByteBuf, ItemRotatePayload> CODEC = StreamCodec.of((buf, value) -> buf.writeInt(value.y).writeFloat(value.rotationDegrees).writeBlockHitResult(value.hitResult), buf -> new ItemRotatePayload(buf.readInt(), buf.readFloat(), buf.readBlockHitResult()));
 
     @Override
     public @NotNull Type<? extends CustomPacketPayload> type() {
@@ -35,7 +35,7 @@ public #if MC_VER >= V1_21 record #else class #endif ItemRotatePayload #if MC_VE
     }
     #endif
 
-    public static void receive(Player player, int y, BlockHitResult hitResult) {
+    public static void receive(Player player, int y, float rotationDegrees, BlockHitResult hitResult) {
         Level level = player #if MC_VER < V1_20_1 .level #else .level() #endif;
         LayingItemEntity entity;
 
@@ -45,7 +45,6 @@ public #if MC_VER >= V1_21 record #else class #endif ItemRotatePayload #if MC_VE
                 boolean quad = entity.quad.get((int) rawSlot / 4);
                 int slot = ((quad) ? rawSlot : rawSlot - rawSlot % 4);
 
-                float rotationDegrees = config.getRotationDegrees();
                 float rotatedDegrees = (entity.rot.get(slot) + rotationDegrees * y);
                 float flooredDegrees = rotatedDegrees - (rotatedDegrees % rotationDegrees);
 

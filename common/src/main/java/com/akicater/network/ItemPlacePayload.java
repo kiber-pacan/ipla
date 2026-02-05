@@ -37,10 +37,10 @@ import java.util.Random;
 
 import static com.akicater.IPLA.*;
 
-public #if MC_VER >= V1_21 record #else class #endif ItemPlacePayload #if MC_VER >= V1_21 (BlockHitResult hitResult) implements CustomPacketPayload #endif {
+public #if MC_VER >= V1_21 record #else class #endif ItemPlacePayload #if MC_VER >= V1_21 (BlockPos pos, BlockHitResult hitResult) implements CustomPacketPayload #endif {
     #if MC_VER >= V1_21
     public static final Type<ItemPlacePayload> TYPE = new Type<>(#if MC_VER >= V1_21_11 Identifier #else ResourceLocation #endif.fromNamespaceAndPath(MOD_ID, "place_item"));
-    public static final StreamCodec<FriendlyByteBuf, ItemPlacePayload> CODEC = StreamCodec.of((buf, value) -> buf.writeBlockHitResult(value.hitResult), buf -> new ItemPlacePayload(buf.readBlockHitResult()));
+    public static final StreamCodec<FriendlyByteBuf, ItemPlacePayload> CODEC = StreamCodec.of((buf, value) -> buf.writeBlockPos(value.pos).writeBlockHitResult(value.hitResult), buf -> new ItemPlacePayload(buf.readBlockPos() ,buf.readBlockHitResult()));
 
     @Override
     public @NotNull Type<? extends CustomPacketPayload> type() {
@@ -67,7 +67,7 @@ public #if MC_VER >= V1_21 record #else class #endif ItemPlacePayload #if MC_VER
         level.setBlockAndUpdate(pos, state);
     }
 
-    public static void receive(Player player, BlockHitResult hitResult) {
+    public static void receive(Player player, BlockPos fuck, BlockHitResult hitResult) {
         ItemStack stack = player.getMainHandItem(); if (stack.isEmpty()) return; // Return if hand empty
         Level level = player #if MC_VER < V1_20_1 .level #else .level() #endif;
 
