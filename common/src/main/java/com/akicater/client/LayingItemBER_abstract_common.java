@@ -101,7 +101,7 @@ public abstract class #if MC_VER >= V1_21_9 LayingItemBER_abstract_common implem
         for(int i = 0; i < blockEntity.inv.size(); ++i) {
             renderState.isFullBlock.add(blockEntity.inv.get(i).getItem() instanceof BlockItem && ((BlockItem) blockEntity.inv.get(i).getItem()).getBlock().defaultBlockState().isCollisionShapeFullBlock(blockEntity.getLevel(), blockEntity.getBlockPos()));
             ItemStackRenderState itemStackRenderState = new ItemStackRenderState();
-            this.itemModelResolver.updateForTopItem(itemStackRenderState, blockEntity.inv.get(i), ItemDisplayContext.FIXED, blockEntity.getLevel(), null, i + j);
+            this.itemModelResolver.updateForTopItem(itemStackRenderState, blockEntity.inv.get(i), ItemDisplayContext.FIXED, blockEntity.getLevel(), Minecraft.getInstance().player, i + j);
             renderState.inv.add(itemStackRenderState);
         }
     }
@@ -139,10 +139,25 @@ public abstract class #if MC_VER >= V1_21_9 LayingItemBER_abstract_common implem
                             poseStack.scale(iSize, iSize, iSize);
                         }
 
+
                         #if MC_VER >= V1_21_9
                         irs.submit(poseStack, nodeCollector, entity.lightCoords, OverlayTexture.NO_OVERLAY, 0);
                         #else
-                        itemRenderer.renderStatic(stack, #if MC_VER >= V1_19_4 ItemDisplayContext.FIXED #else ItemTransforms.TransformType.FIXED #endif, packedLight, packedOverlay, poseStack, buffer #if MC_VER >= V1_19_4, entity.getLevel() #endif, 1);
+                        net.minecraft.client.resources.model.BakedModel model = itemRenderer.getModel(stack, entity.getLevel(), Minecraft.getInstance().player, slot * 4 + i);
+                        itemRenderer.render(
+                                stack,
+                                #if MC_VER >= V1_19_4
+                                ItemDisplayContext.FIXED
+                                #else
+                                ItemTransforms.TransformType.FIXED
+                                #endif,
+                                false,
+                                poseStack,
+                                buffer,
+                                packedLight,
+                                packedOverlay,
+                                model
+                        );
                         #endif
 
                         poseStack.popPose();
@@ -173,8 +188,22 @@ public abstract class #if MC_VER >= V1_21_9 LayingItemBER_abstract_common implem
                     #if MC_VER >= V1_21_9
                     irs.submit(poseStack, nodeCollector, entity.lightCoords, OverlayTexture.NO_OVERLAY, 0);
                     #else
-                    itemRenderer.renderStatic(stack, #if MC_VER >= V1_19_4 ItemDisplayContext.FIXED #else ItemTransforms.TransformType.FIXED #endif, packedLight, packedOverlay, poseStack, buffer #if MC_VER >= V1_19_4, entity.getLevel() #endif, 1);
-                    #endif
+                    net.minecraft.client.resources.model.BakedModel model = itemRenderer.getModel(stack, entity.getLevel(), Minecraft.getInstance().player, slot * 4);
+                    itemRenderer.render(
+                            stack,
+                            #if MC_VER >= V1_19_4
+                            ItemDisplayContext.FIXED
+                            #else
+                            ItemTransforms.TransformType.FIXED
+                            #endif,
+                            false,
+                            poseStack,
+                            buffer,
+                            packedLight,
+                            packedOverlay,
+                            model
+                    );
+                        #endif
 
                     poseStack.popPose();
                 }
