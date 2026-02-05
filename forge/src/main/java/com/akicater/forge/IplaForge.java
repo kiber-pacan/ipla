@@ -3,6 +3,7 @@ package com.akicater.forge;
 
 import com.akicater.IPLA;
 import com.akicater.client.screen.IPLA_ConfigScreenBase;
+import com.akicater.forge.client.IplaClientHelper;
 import dev.architectury.platform.forge.EventBuses;
 import net.minecraftforge.api.distmarker.Dist;
 #if MC_VER >= V1_19_2 && MC_VER < V1_20_4
@@ -30,13 +31,6 @@ public final class IplaForge {
         IPLA.initializeServer();
         DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> IPLA::initializeClient);
 
-        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () ->
-                ModLoadingContext.get().registerExtensionPoint(
-                        #if MC_VER >= V1_19_2 ConfigScreenHandler.ConfigScreenFactory.class #else ConfigGuiHandler.ConfigGuiFactory.class #endif,
-                        () -> new #if MC_VER >= V1_19_2 ConfigScreenHandler.ConfigScreenFactory #else ConfigGuiHandler.ConfigGuiFactory #endif(
-                                (client, screen) -> new IPLA_ConfigScreenBase(screen)
-                        )
-                )
-        );
+        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> IplaClientHelper::registerConfig);
     }
 }
