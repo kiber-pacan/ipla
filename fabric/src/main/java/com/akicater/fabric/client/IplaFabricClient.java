@@ -1,6 +1,7 @@
 package com.akicater.fabric.client;
 
 import com.akicater.IPLA;
+import com.akicater.IPLA_Client;
 import com.akicater.client.LayingItemBER_common;
 import dev.architectury.registry.client.rendering.BlockEntityRendererRegistry;
 import net.fabricmc.api.ClientModInitializer;
@@ -19,7 +20,7 @@ import net.minecraft.network.chat.TextComponent;
 public final class IplaFabricClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
-        IPLA.initializeClient();
+        IPLA_Client.initializeClient();
         #if MC_VER >= V1_19_2
         BlockEntityRenderers.register(IPLA.lItemBlockEntity.get(), LayingItemBER_common::new);
         #else

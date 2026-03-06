@@ -2,6 +2,7 @@ package com.akicater.forge;
 
 
 import com.akicater.IPLA;
+import com.akicater.IPLA_Client;
 import com.akicater.client.screen.IPLA_ConfigScreenBase;
 import com.akicater.forge.client.IplaClientHelper;
 import dev.architectury.platform.forge.EventBuses;
@@ -29,7 +30,7 @@ public final class IplaForge {
         EventBuses.registerModEventBus(IPLA.MOD_ID, FMLJavaModLoadingContext.get().getModEventBus());
 
         IPLA.initializeServer();
-        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> IPLA::initializeClient);
+        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> IPLA_Client::initializeClient);
 
         DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> IplaClientHelper::registerConfig);
     }

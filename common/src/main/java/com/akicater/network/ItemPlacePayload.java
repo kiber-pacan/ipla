@@ -1,10 +1,13 @@
 package com.akicater.network;
 
 #if MC_VER >= V1_21
+import com.akicater.IPLA_Client;
+import com.akicater.IPLA_Methods;
 import com.akicater.blocks.LayingItem;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+
 
 import net.minecraft.world.phys.HitResult;
 import org.jetbrains.annotations.NotNull;
@@ -13,6 +16,7 @@ import org.jetbrains.annotations.NotNull;
 #if MC_VER >= V1_21_11
 import net.minecraft.resources.Identifier;
 #else
+import com.akicater.IPLA_Methods;
 import com.akicater.blocks.LayingItem;
 import net.minecraft.resources.ResourceLocation;
 #endif
@@ -24,6 +28,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -32,8 +37,9 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.BlockHitResult;
 
-
+import net.minecraft.world.item.BlockItem;
 import java.util.Random;
+import java.util.logging.Logger;
 
 import static com.akicater.IPLA.*;
 
@@ -51,17 +57,21 @@ public #if MC_VER >= V1_21 record #else class #endif ItemPlacePayload #if MC_VER
     public static float getDegrees() {
         Random random = new Random();
 
-        float rotationDegrees = config.getRotationDegrees();
+        float rotationDegrees = 90;
         float rotatedDegrees = random.nextFloat(180, 360) * (random.nextInt(0, 2) * 2 - 1);
 
         return rotatedDegrees - (rotatedDegrees % rotationDegrees);
     }
 
-    public static void createBlockEntity(Level level, BlockState replacedBlockState, Block replacedBlock, BlockPos pos) {
-        BlockState state = IPLA.lItemBlock.get().defaultBlockState();
+    public static void createBlockEntity(Level level, BlockState replacedBlockState, Block replacedBlock, BlockPos pos, ItemStack stack) {
+        BlockState state = lItemBlock.get().defaultBlockState();
 
         if (replacedBlock == Blocks.WATER && replacedBlockState.getValue(BlockStateProperties.LEVEL) == 0) {
             state = state.setValue(BlockStateProperties.WATERLOGGED, true);
+        }
+
+        if (stack.getItem() instanceof BlockItem) {
+            state = state.setValue(LayingItem.LIGHT, ((BlockItem) stack.getItem()).getBlock().defaultBlockState().getLightEmission());
         }
 
         level.setBlockAndUpdate(pos, state);
@@ -82,11 +92,14 @@ public #if MC_VER >= V1_21 record #else class #endif ItemPlacePayload #if MC_VER
         Block relativeBlock = relativeBlockState.getBlock();
 
         boolean isEmpty = relativeBlock == Blocks.AIR || relativeBlock == Blocks.CAVE_AIR || relativeBlock == Blocks.WATER; // Checking if block is empty
-        boolean isLayingItem = relativeBlock instanceof LayingItem; // Checking if block is layi
+        boolean isLayingItem = relativeBlock instanceof LayingItem; // Checking if block is laying item
 
         if (isEmpty || isLayingItem) {
+            BlockState state = null;
             if (isEmpty) {
-                createBlockEntity(level, relativeBlockState, relativeBlock, relativePos);
+                createBlockEntity(level, relativeBlockState, relativeBlock, relativePos, stack);
+            } else {
+                state = level.getChunk(relativePos).getBlockState(relativePos);
             }
 
             LayingItemEntity entity = (LayingItemEntity) level #if MC_VER < V1_21 .getChunk(relativePos) #endif.getBlockEntity(relativePos);
@@ -95,7 +108,7 @@ public #if MC_VER >= V1_21 record #else class #endif ItemPlacePayload #if MC_VER
             if (entity == null) return;
             boolean quad = entity.quad.get(directionIndex);
 
-            int slot = getSlotFromHit(hitResult, true, quad || player.isDiscrete());
+            int slot = IPLA_Methods.getSlotFromHit(hitResult, true, quad || player.isDiscrete());
             if (!((quad) ? entity.isSubSlotEmpty(slot) : entity.isSlotEmpty(directionIndex))) return;
             float flooredDegrees = getDegrees();
 
@@ -105,6 +118,11 @@ public #if MC_VER >= V1_21 record #else class #endif ItemPlacePayload #if MC_VER
             entity.quad.set(directionIndex, player.isDiscrete() || quad);
 
             level.playSound(null, pos.getX(), pos.getY(), pos.getZ(), SoundEvents.PAINTING_PLACE, SoundSource.BLOCKS, 1, 1.4f);
+
+            if (state != null) {
+                state = state.setValue(LayingItem.LIGHT, entity.getMaxLightLevel());
+                level.setBlockAndUpdate(relativePos, state);
+            }
 
             entity.markDirty();
         }

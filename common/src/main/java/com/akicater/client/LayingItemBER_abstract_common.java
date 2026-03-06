@@ -1,6 +1,7 @@
 package com.akicater.client;
 
 #if MC_VER >= V1_19_4
+import com.akicater.IPLA_Client;
 import com.mojang.math.Axis;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.NonNullList;
@@ -10,6 +11,7 @@ import org.jetbrains.annotations.Nullable;
 import org.joml.Quaternionf;
 import org.joml.Math;
 #else
+import com.akicater.IPLA_Client;
 import com.mojang.math.Quaternion;
 import com.mojang.math.Vector3f;
 import net.minecraft.client.renderer.block.model.ItemTransforms;
@@ -41,6 +43,8 @@ import net.minecraft.client.renderer.state.CameraRenderState;
 #endif
 
 import com.akicater.IPLA;
+
+import com.akicater.client.LayingItemBERS;
 
 public abstract class #if MC_VER >= V1_21_9 LayingItemBER_abstract_common implements BlockEntityRenderer<LayingItemEntity, LayingItemBERS> #else LayingItemBER_abstract_common implements BlockEntityRenderer<LayingItemEntity> #endif {
     public LayingItemBER_abstract_common(BlockEntityRendererProvider.Context context) {
@@ -117,8 +121,8 @@ public abstract class #if MC_VER >= V1_21_9 LayingItemBER_abstract_common implem
 
         for (int slot = 0; slot < 6; slot++) {
             if (entity.quad.get(slot)) {
-                float iSize = itemSize * absoluteSize / IPLA.config.itemScale;
-                float bSize = blockSize * absoluteSize / IPLA.config.blockScale;
+                float iSize = itemSize * absoluteSize / IPLA_Client.config.itemScale;
+                float bSize = blockSize * absoluteSize / IPLA_Client.config.blockScale;
 
                 for (int i = 0; i < 4; i++) {
                     if (!entity.inv.get(slot * 4 + i).isEmpty()) {
@@ -142,8 +146,8 @@ public abstract class #if MC_VER >= V1_21_9 LayingItemBER_abstract_common implem
 
                         #if MC_VER >= V1_21_9
                         irs.submit(poseStack, nodeCollector, entity.lightCoords, OverlayTexture.NO_OVERLAY, 0);
-                        #else
-                        net.minecraft.client.resources.model.BakedModel model = itemRenderer.getModel(stack, entity.getLevel(), Minecraft.getInstance().player, slot * 4 + i);
+                        #elif MC_VER < V1_20_4
+                        net.minecraft.client.resources.model.BakedModel model = itemRenderer.getModel(stack, entity.getLevel(), Minecraft.getInstance().player, slot * 4);
                         itemRenderer.render(
                                 stack,
                                 #if MC_VER >= V1_19_4
@@ -158,6 +162,10 @@ public abstract class #if MC_VER >= V1_21_9 LayingItemBER_abstract_common implem
                                 packedOverlay,
                                 model
                         );
+                        #elif MC_VER < V1_21_5
+                        itemRenderer.renderStatic(Minecraft.getInstance().player, stack, #if MC_VER >= V1_19_4 ItemDisplayContext.FIXED #else ItemTransforms.TransformType.FIXED #endif, false, poseStack, buffer, entity.getLevel(), packedLight, packedOverlay, 1);
+                        #else
+                        itemRenderer.renderStatic(Minecraft.getInstance().player, stack, #if MC_VER >= V1_19_4 ItemDisplayContext.FIXED #else ItemTransforms.TransformType.FIXED #endif, poseStack, buffer, entity.getLevel(), packedLight, packedOverlay, 1);
                         #endif
 
                         poseStack.popPose();
@@ -187,7 +195,7 @@ public abstract class #if MC_VER >= V1_21_9 LayingItemBER_abstract_common implem
 
                     #if MC_VER >= V1_21_9
                     irs.submit(poseStack, nodeCollector, entity.lightCoords, OverlayTexture.NO_OVERLAY, 0);
-                    #else
+                    #elif MC_VER < V1_20_4
                     net.minecraft.client.resources.model.BakedModel model = itemRenderer.getModel(stack, entity.getLevel(), Minecraft.getInstance().player, slot * 4);
                     itemRenderer.render(
                             stack,
@@ -203,7 +211,11 @@ public abstract class #if MC_VER >= V1_21_9 LayingItemBER_abstract_common implem
                             packedOverlay,
                             model
                     );
-                        #endif
+                    #elif MC_VER < V1_21_5
+                    itemRenderer.renderStatic(Minecraft.getInstance().player, stack, #if MC_VER >= V1_19_4 ItemDisplayContext.FIXED #else ItemTransforms.TransformType.FIXED #endif, false, poseStack, buffer, entity.getLevel(), packedLight, packedOverlay, 1);
+                    #else
+                    itemRenderer.renderStatic(Minecraft.getInstance().player, stack, #if MC_VER >= V1_19_4 ItemDisplayContext.FIXED #else ItemTransforms.TransformType.FIXED #endif, poseStack, buffer, entity.getLevel(), packedLight, packedOverlay, 1);
+                    #endif
 
                     poseStack.popPose();
                 }
@@ -271,4 +283,3 @@ public abstract class #if MC_VER >= V1_21_9 LayingItemBER_abstract_common implem
     public abstract void render(LayingItemEntity entity, float partialTick, PoseStack poseStack, MultiBufferSource buffer, int packedLight, int packedOverlay, Vec3 cameraPos);
     #endif
 }
-

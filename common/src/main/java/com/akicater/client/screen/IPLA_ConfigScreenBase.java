@@ -2,10 +2,12 @@ package com.akicater.client.screen;
 
 import com.akicater.IPLA;
 #if MC_VER >= V1_20_1
+import com.akicater.IPLA_Client;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 #endif
 
+import com.akicater.IPLA_Client;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.client.gui.components.Button;
@@ -19,7 +21,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 
 
 
-import static com.akicater.IPLA.config;
+import static com.akicater.IPLA_Client.config;
 
 #if MC_VER >= V1_19_4
 #else
@@ -225,7 +227,7 @@ public class IPLA_ConfigScreenBase extends Screen {
 
     @Override
     public void onClose() {
-        IPLA.config.saveConfig();
+        IPLA_Client.config.saveConfig();
         this.minecraft.setScreen(parent);
     }
 

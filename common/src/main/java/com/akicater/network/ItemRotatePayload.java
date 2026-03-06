@@ -2,6 +2,7 @@ package com.akicater.network;
 
 #if MC_VER >= V1_21
 import com.akicater.IPLA;
+import com.akicater.IPLA_Methods;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -11,6 +12,7 @@ import org.jetbrains.annotations.NotNull;
 #if MC_VER >= V1_21_11
 import net.minecraft.resources.Identifier;
 #else
+import com.akicater.IPLA_Methods;
 import net.minecraft.resources.ResourceLocation;
 #endif
 
@@ -40,7 +42,7 @@ public #if MC_VER >= V1_21 record #else class #endif ItemRotatePayload #if MC_VE
         LayingItemEntity entity;
 
         if ((entity = (LayingItemEntity) level.getChunk(hitResult.getBlockPos()).getBlockEntity(hitResult.getBlockPos())) != null) {
-            List<Integer> slots = getPreciseIndexFromHit(entity, hitResult, false);
+            List<Integer> slots = IPLA_Methods.getPreciseIndexFromHit(entity, hitResult, false);
             for (int rawSlot : slots) {
                 boolean quad = entity.quad.get((int) rawSlot / 4);
                 int slot = ((quad) ? rawSlot : rawSlot - rawSlot % 4);

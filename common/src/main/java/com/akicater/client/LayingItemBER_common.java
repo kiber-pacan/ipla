@@ -1,6 +1,7 @@
 package com.akicater.client;
 
 import com.akicater.IPLA;
+import com.akicater.IPLA_Client;
 import com.akicater.blocks.LayingItemEntity;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -28,9 +29,9 @@ public class LayingItemBER_common extends LayingItemBER_abstract_common {
     #endif
     {
         #if MC_VER >= V1_21_9
-        render(renderState, poseStack, nodeCollector, cameraRenderState, IPLA.config.itemSize, IPLA.config.blockSize, IPLA.config.absoluteSize, IPLA.config.oldRendering);
+        render(renderState, poseStack, nodeCollector, cameraRenderState, IPLA_Client.config.itemSize, IPLA_Client.config.blockSize, IPLA_Client.config.absoluteSize, IPLA_Client.config.oldRendering);
         #else
-        render(entity, partialTick, poseStack, buffer, packedLight, packedOverlay, #if MC_VER >= V1_21_5 cameraPos, #endif IPLA.config.itemSize, IPLA.config.blockSize, IPLA.config.absoluteSize, IPLA.config.oldRendering, partialTick);
+        render(entity, partialTick, poseStack, buffer, packedLight, packedOverlay, #if MC_VER >= V1_21_5 cameraPos, #endif IPLA_Client.config.itemSize, IPLA_Client.config.blockSize, IPLA_Client.config.absoluteSize, IPLA_Client.config.oldRendering, partialTick);
         #endif
     }
 }

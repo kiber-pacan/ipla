@@ -1,11 +1,15 @@
 package com.akicater.blocks;
 
 import com.akicater.IPLA;
-import com.mojang.datafixers.util.Pair;
+import com.akicater.IPLA_Methods;
+import com.akicater.client.EatingPlayer;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 #if MC_VER >= V1_19_4
+#endif
+#if MC_VER >= V1_21
+import net.minecraft.core.component.DataComponents;
 #endif
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -14,7 +18,10 @@ import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.food.FoodProperties;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.*;
 
 import net.minecraft.world.level.block.*;
@@ -26,36 +33,37 @@ import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
+#if MC_VER <= V1_21_10
+import org.apache.commons.logging.Log;
+#endif
 import org.jetbrains.annotations.NotNull;
 
 #if MC_VER > V1_21
 import net.minecraft.util.RandomSource;
-
 #endif
 
 import java.util.List;
+import java.util.logging.Logger;
 
 
 public class LayingItem extends BaseEntityBlock implements SimpleWaterloggedBlock {
     #if MC_VER > V1_20_1 public static final MapCodec<LayingItem> CODEC = simpleCodec(LayingItem::new); #endif
     public static BooleanProperty WATERLOGGED = BooleanProperty.create("waterlogged");
+    public static IntegerProperty LIGHT = IntegerProperty.create("light", 0, 16);
 
     public LayingItem(Properties properties) {
         super(properties);
-        this.registerDefaultState(this.stateDefinition.any().setValue(WATERLOGGED, false));
+        this.registerDefaultState(this.stateDefinition.any().setValue(WATERLOGGED, false).setValue(LIGHT, 0));
     }
 
     @Override
-    #if MC_VER >= V1_21_3
-    protected int getLightBlock(BlockState state) {
-        return 0;
+    #if MC_VER >= V1_21 protected #else public  #endif int getLightBlock(BlockState state #if MC_VER < V1_21_3, BlockGetter level, BlockPos pos #endif) {
+        return -state.getValue(LIGHT).intValue();
     }
-    #else
-    public int getLightBlock(BlockState state, BlockGetter level, BlockPos pos) {
-        return 0;
-    }
-    #endif
 
+    public static int getLuminance(BlockState state) {
+        return state.getValue(LIGHT).intValue();
+    }
 
 
     #if MC_VER < V1_21_3
@@ -87,7 +95,7 @@ public class LayingItem extends BaseEntityBlock implements SimpleWaterloggedBloc
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(WATERLOGGED);
+        builder.add(WATERLOGGED).add(LIGHT);
     }
 
     @Override
@@ -158,14 +166,23 @@ public class LayingItem extends BaseEntityBlock implements SimpleWaterloggedBloc
         LayingItemEntity entity = (LayingItemEntity) level#if MC_VER < V1_21 .getChunk(pos) #endif.getBlockEntity(pos);
 
         if (entity != null) {
-
-            List<Integer> indices = IPLA.getPreciseIndexFromHit(entity, hit, false);
+            List<Integer> indices = IPLA_Methods.getPreciseIndexFromHit(entity, hit, false);
 
             for (int index : indices) {
                 if (entity.inv.get(index).isEmpty()) return InteractionResult.FAIL;
 
+                boolean success = false;
+
                 ItemStack itemStack = entity.inv.get(index).copy();
-                boolean success = player.addItem(itemStack);
+
+                boolean food = #if MC_VER >= V1_21 ((FoodProperties) itemStack.get(DataComponents.FOOD)) != null; #else itemStack.getItem().isEdible(); #endif
+                boolean emptyHand = player.getMainHandItem().getItem() == Items.AIR;
+                boolean canEat = player.canEat(false);
+
+
+                if (!food || (food && !emptyHand) || !canEat || player.isDiscrete()) {
+                    success = player.addItem(itemStack);
+                }
 
                 if (success && itemStack.isEmpty()) {
                     entity.inv.set(index, ItemStack.EMPTY);
@@ -179,6 +196,11 @@ public class LayingItem extends BaseEntityBlock implements SimpleWaterloggedBloc
                         entity.quad.set((int) index / 4, false);
                     }
 
+                    if (!entity.isEmpty()) {
+                        state = state.setValue(LayingItem.LIGHT, entity.getMaxLightLevel());
+                        level.setBlockAndUpdate(pos, state);
+                    }
+
                     entity.markDirty(player);
 
                     return InteractionResult.SUCCESS;
@@ -187,10 +209,8 @@ public class LayingItem extends BaseEntityBlock implements SimpleWaterloggedBloc
                 }
             }
 
-            return InteractionResult.PASS;
-        } else {
-            return InteractionResult.PASS;
         }
+        return InteractionResult.PASS;
     }
 
     static {

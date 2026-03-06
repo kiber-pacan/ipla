@@ -19,12 +19,17 @@ architectury {
     minecraft = project.minecraft_version
 }
 
+
+base {
+    archivesName = rootProject.archives_name
+}
+
 allprojects {
     apply plugin: "java"
     apply plugin: "architectury-plugin"
     apply plugin: "maven-publish"
 
-    archivesBaseName = rootProject.archives_name
+
     version = rootProject.mod_version
     group = rootProject.maven_group
 
@@ -62,7 +67,7 @@ allprojects {
     }
 
     tasks.withType(JavaCompile).configureEach {
-        options.annotationProcessorGeneratedSourcesDirectory = file("$buildDir/generated/sources/annotations")
+        //options.annotationProcessorGeneratedSourcesDirectory = file("$buildDir/generated/sources/annotations")
         options.compilerArgs += ["-ALOADER=${loaders[loader]}"]
     }
 }

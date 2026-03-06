@@ -2,30 +2,26 @@ package com.akicater;
 
 import com.akicater.blocks.LayingItem;
 import com.akicater.blocks.LayingItemEntity;
-import com.akicater.client.IPLA_Config;
 
+import com.akicater.client.EatingPlayer;
+import com.akicater.network.ItemEatPayload;
 import com.akicater.network.ItemPlacePayload;
 import com.akicater.network.ItemRotatePayload;
-import dev.architectury.event.events.client.ClientLifecycleEvent;
 import com.google.common.base.Suppliers;
-import com.mojang.blaze3d.platform.InputConstants;
-import dev.architectury.event.EventResult;
-import dev.architectury.event.events.client.ClientRawInputEvent;
-import dev.architectury.event.events.client.ClientTickEvent;
+import dev.architectury.event.events.common.TickEvent;
 import dev.architectury.networking.NetworkManager;
-import dev.architectury.platform.Platform;
-import dev.architectury.registry.client.keymappings.KeyMappingRegistry;
 import dev.architectury.registry.registries.Registrar;
 import dev.architectury.registry.registries.RegistrySupplier;
-import io.netty.buffer.Unpooled;
-import net.minecraft.client.KeyMapping;
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 #if MC_VER >= V1_21_11
+import net.minecraft.core.Registry;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.Identifier;
 #else
+#if MC_VER >= V1_21
+import net.minecraft.core.component.DataComponents;
+#endif
 import net.minecraft.core.Registry;
-import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 #endif
 
@@ -33,23 +29,25 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.resources.ResourceKey;
 #endif
 
-import net.minecraft.world.InteractionHand;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 #if MC_VER >= V1_20_1
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.CreativeModeTab;
 #endif
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Supplier;
@@ -76,7 +74,7 @@ import net.minecraft.world.level.material.Material;
 public final class IPLA {
     public static final String MOD_ID = "ipla";
     public static final Logger LOGGER = Logger.getLogger(MOD_ID);
-    public static IPLA_Config config = new IPLA_Config();
+
 
     #if MC_VER >= V1_19_4
         public static final Supplier<RegistrarManager> MANAGER = Suppliers.memoize(() -> RegistrarManager.get(MOD_ID));
@@ -102,6 +100,7 @@ public final class IPLA {
 
     public static #if MC_VER >= V1_21_11 Identifier #else ResourceLocation #endif ITEM_PLACE;
     public static #if MC_VER >= V1_21_11 Identifier #else ResourceLocation #endif ITEM_ROTATE;
+    public static #if MC_VER >= V1_21_11 Identifier #else ResourceLocation #endif ITEM_EAT;
 
 
     public static void initializeServer() {
@@ -113,6 +112,7 @@ public final class IPLA {
                         .instabreak()
                         .dynamicShape()
                         .noOcclusion()
+                        .lightLevel(LayingItem::getLuminance)
                         #if MC_VER >= V1_20_4
                         .noTerrainParticles()
                         #endif
@@ -139,239 +139,147 @@ public final class IPLA {
         NetworkManager.registerReceiver(NetworkManager.Side.C2S, ItemRotatePayload.TYPE, ItemRotatePayload.CODEC, (buf, context) ->
                 ItemRotatePayload.receive(context.getPlayer(), buf.y(), buf.rotationDegrees(), buf.hitResult())
         );
+
+        NetworkManager.registerReceiver(NetworkManager.Side.C2S, ItemEatPayload.TYPE, ItemEatPayload.CODEC, (buf, context) ->
+                ItemEatPayload.receive(context.getPlayer(), buf.ipla$isEatingIpla())
+        );
         #else
         ITEM_PLACE = new ResourceLocation(MOD_ID, "place_item");
         ITEM_ROTATE = new ResourceLocation(MOD_ID, "rotate_item");
+        ITEM_EAT = new ResourceLocation(MOD_ID, "eat_item");
 
         NetworkManager.registerReceiver(NetworkManager.Side.C2S, ITEM_PLACE, (buf, context) -> ItemPlacePayload.receive(context.getPlayer(), buf.readBlockPos(), buf.readBlockHitResult()));
 
         NetworkManager.registerReceiver(NetworkManager.Side.C2S, ITEM_ROTATE, (buf, context) -> ItemRotatePayload.receive(context.getPlayer(), buf.readInt(), buf.readFloat(), buf.readBlockHitResult()));
 
+        NetworkManager.registerReceiver(NetworkManager.Side.C2S, ITEM_EAT, (buf, context) -> ItemEatPayload.receive(context.getPlayer(), buf.readBoolean()));
 		#endif
-    }
 
-    public static void initializeClient() {
-        #if MC_VER >= V1_21_9 KeyMapping.Category category = KeyMapping.Category.register(#if MC_VER >= V1_21_11 Identifier #else ResourceLocation #endif.fromNamespaceAndPath(MOD_ID, "ipla")); #endif
-        KeyMapping PLACE_ITEM_KEY;
-        KeyMapping ROTATE_ITEM_KEY;
+        TickEvent.Player.PLAYER_POST.register((player) -> {
+            Vec3 pos = player.getEyePosition();
+            BlockPos blockPos = ((EatingPlayer) player).ipla$getFoodPos();
 
-        PLACE_ITEM_KEY = new KeyMapping(
-                "key.ipla.place_item_key",
-                InputConstants.Type.KEYSYM,
-                InputConstants.KEY_V,
-                #if MC_VER >= V1_21_9 category #else "key.categories.ipla" #endif
-        );
+            double distance = (blockPos != null) ? ((EatingPlayer) player).ipla$getFoodPos().distToCenterSqr(pos.x, pos.y, pos.z) : 0;
 
-        ROTATE_ITEM_KEY = new KeyMapping(
-                "key.ipla.rotate_item_key",
-                InputConstants.Type.KEYSYM,
-                InputConstants.KEY_LALT,
-                #if MC_VER >= V1_21_9 category #else "key.categories.ipla" #endif
-        );
+            ItemStack targetFood = ((EatingPlayer) player).ipla$getTargetFood();
+            Level level = #if MC_VER >= V1_20_1 player.level(); #else player.level; #endif
 
-        KeyMappingRegistry.register(PLACE_ITEM_KEY);
-        KeyMappingRegistry.register(ROTATE_ITEM_KEY);
-
-        ClientTickEvent.CLIENT_POST.register(client -> {
-            if (PLACE_ITEM_KEY.consumeClick()) {
-                if (client.hitResult instanceof BlockHitResult) {
-                    assert Minecraft.getInstance().level != null;
-                    Block hittedBlock = Minecraft.getInstance().level.getBlockState(((BlockHitResult) client.hitResult).getBlockPos()).getBlock();
-                    assert client.player != null;
-                    ItemStack stack = client.player.getItemInHand(InteractionHand.MAIN_HAND);
-
-                    if (stack == ItemStack.EMPTY && (hittedBlock == Blocks.AIR || hittedBlock == Blocks.CAVE_AIR)) return;
-
-                    #if MC_VER < V1_21
-                    FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
-
-                    buf.writeBlockPos(((BlockHitResult) client.hitResult).getBlockPos());
-                    buf.writeBlockHitResult((BlockHitResult) client.hitResult);
-
-                    NetworkManager.sendToServer(ITEM_PLACE, buf);
-					#else
-                    ItemPlacePayload payload = new ItemPlacePayload(
-                            ((BlockHitResult) client.hitResult).getBlockPos(),
-                            (BlockHitResult) client.hitResult
-                    );
-
-                    NetworkManager.sendToServer(payload);
-					#endif
-                }
+            // Preventing eating of certain conditions
+            if (player.isDiscrete() || distance >= 16 || !player.canEat(true)) {
+                IPLA_Methods.clearEatingPlayer(player);
+                return;
             }
-        });
 
-        ClientRawInputEvent.MOUSE_SCROLLED.register((Minecraft minecraft, #if MC_VER > V1_20_1 double x, #endif double y) -> {
-            BlockHitResult hitResult = getBlockHitResult(minecraft.hitResult);
+            // Maybe this unfucks eating with hunger 100
+            if (!player.canEat(true)) {
+                IPLA_Methods.clearEating(player);
+                return;
+            }
 
+            // Eat food
+            if (((EatingPlayer) player).ipla$getEatingTicks() >= 32 && !player.isDiscrete()) {
+                LayingItemEntity entity = ((EatingPlayer) player).ipla$getLayingItemEntity();
 
-            if (hitResult != null && ROTATE_ITEM_KEY.isDown()) {
-                if (minecraft.level != null && minecraft.level.getBlockState(hitResult.getBlockPos()).getBlock() instanceof LayingItem) {
-                    float rotationDegrees = config.getRotationDegrees();
-
-                    #if MC_VER < V1_21
-                    FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
-
-                    buf.writeInt((int) y);
-                    buf.writeFloat(rotationDegrees);
-                    buf.writeBlockHitResult(hitResult);
-
-                    NetworkManager.sendToServer(ITEM_ROTATE, buf);
-
+                if (!player.isCreative()) {
+                    #if MC_VER >= V1_21_3
+                    player.getFoodData().eat(targetFood.get(DataComponents.FOOD));
                     #else
-                        ItemRotatePayload payload = new ItemRotatePayload(
-                                (int) y,
-                                rotationDegrees,
-                                hitResult
-                        );
-
-                        NetworkManager.sendToServer(payload);
+                    player.eat(level, targetFood);
                     #endif
 
-                    if (#if MC_VER < V1_20_4 Platform.isForge() #else Platform.isForgeLike() #endif) {
-                        return EventResult.interruptFalse();
-                    } else {
-                        return EventResult.interruptTrue();
+                    // Clear slot
+                    entity.inv.set(((EatingPlayer) player).ipla$getHit(), ItemStack.EMPTY);
+                } else {
+                    level.playSound((Player)null, player.getX(), player.getY(), player.getZ(), SoundEvents.PLAYER_BURP, SoundSource.PLAYERS, 0.5F, level.random.nextFloat() * 0.1F + 0.9F);
+                }
+
+
+
+                // Clear player eating values
+                IPLA_Methods.clearEatingPlayer(player);
+
+                entity.markDirty(player);
+
+                if (entity.isEmpty()) {
+                    level.setBlockAndUpdate(blockPos, Blocks.AIR.defaultBlockState());
+                }
+            }
+
+            // Tick
+            if (((EatingPlayer) player).ipla$isEating()) {
+                double reachDistance = 5.0;
+                BlockHitResult hitResult = rayTrace(#if MC_VER >= V1_20_1 player.level() #else player.level #endif, player, reachDistance);
+
+                // If not looking at Block return
+                if (hitResult == null) {
+                    IPLA_Methods.clearEatingPlayer(player);
+                    return;
+                }
+
+                BlockPos hitPos = hitResult.getBlockPos();
+                LayingItemEntity entity = (LayingItemEntity) level.getChunk(hitPos).getBlockEntity(hitPos);
+
+                // If not looking at LayingItemEntity return
+                if (entity == null) {
+                    IPLA_Methods.clearEatingPlayer(player);
+                    return;
+                }
+
+                ItemStack foodStack = ItemStack.EMPTY;
+
+                List<Integer> hits = IPLA_Methods.getPreciseIndexFromHit(entity, hitResult, true);
+                Integer hit = null;
+
+                // Get first food item
+                for (int index : hits) {
+                    ItemStack stack = entity.inv.get(index);
+                    boolean food = #if MC_VER >= V1_21 ((FoodProperties) stack.get(DataComponents.FOOD)) != null; #else stack.getItem().isEdible(); #endif
+
+                    if (!stack.isEmpty() && food) {
+                        hit = index;
+                        foodStack = stack;
                     }
                 }
-            }
-            return EventResult.interruptDefault();
-        });
 
-        ClientLifecycleEvent.CLIENT_STARTED.register((minecraft) -> {
-            try {
-                config.loadConfig();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+                if (foodStack != ItemStack.EMPTY) {
+                    ((EatingPlayer) player).ipla$setEating(true);
+                    ((EatingPlayer) player).ipla$setTargetFood(foodStack);
+                    ((EatingPlayer) player).ipla$setFoodPos(hitPos);
+                    ((EatingPlayer) player).ipla$setHit(hit);
+                    ((EatingPlayer) player).ipla$setLayingItemEntity(entity);
 
-            #if LOADER == COMMON LOGGER.info("CUI loader mode: COMMON"); #endif
-            #if LOADER == FABRIC LOGGER.info("CUI loader mode: FABRIC"); #endif
-            #if LOADER == NEOFORGE LOGGER.info("CUI loader mode: NEOFORGE"); #endif
-            #if LOADER == FORGE LOGGER.info("CUI loader mode: FORGE"); #endif
-        });
+                    ((EatingPlayer) player).ipla$tickEating();
 
-        ClientLifecycleEvent.CLIENT_STOPPING.register((minecraft) -> {
-            config.saveConfig();
-        });
-    }
-
-    static List<AABB> boxes = new ArrayList<>(
-            List.of(
-                    new AABB(0.0, 1.0 - 1.0 / 16 * 4, 0.0, 1.0, 1.0, 1.0), // TOP
-                    new AABB(0.0, 0.0, 0.0, 1.0, 1.0 / 16 * 4, 1.0), // DOWN
-                    new AABB(0.0, 0.0, 1.0 - 1.0 / 16 * 4, 1.0, 1.0, 1.0), // SOUTH
-                    new AABB(0.0, 0.0, 0, 1.0, 1.0, 1.0 / 16 * 4), // NORTH
-                    new AABB(1.0 / 16 * 4, 0.0, 0.0, 1.0 / 16 * 4, 1.0f, 1.0f), // WEST
-                    new AABB(1.0 - 1.0 / 16 * 4, 0.0, 0.0, 1.0 - 1.0 / 16 * 4, 1.0f, 1.0f) // EAST
-        )
-
-
-    );
-
-    /*
-    static List<AABB> boxes = new ArrayList<>(
-            List.of(
-                    new AABB(0.0, 1.0 - 1.0 / 16 * 4, 0.0, 1.0, 1.0, 1.0), // TOP
-                    new AABB(0.0, 0.0, 0.0, 1.0, 1.0 / 16 * 4, 1.0), // DOWN
-                    new AABB(0.0, 0.0, 1.0 - 1.0 / 16 * 4, 1.0, 1.0, 1.0), // SOUTH
-                    new AABB(0.0, 0.0, 0.0, 1.0, 1.0, 1.0 / 16 * 4), // NORTH
-                    new AABB(1.0 - 1.0 / 16 * 4, 0.0, 0.0, 1.0, 1.0, 1.0), // WEST
-                    new AABB(0.0, 0.0, 0.0, 1.0 / 16 * 4, 1.0, 1.0) // EAST
-            )
-    );
-    */
-
-    public static BlockHitResult getBlockHitResult(HitResult hit) {
-        if (hit.getType() == HitResult.Type.BLOCK) {
-            return (BlockHitResult) hit;
-        }
-        return null;
-    }
-
-    static final double EPS = 1e-6;
-
-    private static boolean contains(double x, double y, double z, AABB box) {
-        return x >= box.minX - EPS && x <= box.maxX + EPS
-                && y >= box.minY - EPS && y <= box.maxY + EPS
-                && z >= box.minZ - EPS && z <= box.maxZ + EPS;
-    }
-
-
-    public static int getSlotFromShape(double x, double y, double z) {
-        List<Integer> slots = new ArrayList<>();
-        for (int i = 0; i < boxes.size(); i++) {
-            if (contains(x, y, z, boxes.get(i))) {
-                return i;
-            }
-        }
-
-        return -1;
-    }
-
-    private static int getSubSlotFromPos(int slot, double x, double y, double z) {
-        switch (slot) {
-            case 0, 1 -> {
-                return (slot == 1) ? getIndexFromXY(x, 1 - z) : getIndexFromXY(x, z);
-            }
-            case 2, 3 -> {
-                return (slot == 2) ? getIndexFromXY(1 - x, y) : getIndexFromXY(x, y);
-            }
-            case 4, 5 -> {
-                return (slot == 5) ? getIndexFromXY(1 - z, y) : getIndexFromXY(z, y);
-            }
-        }
-
-        return 0;
-    }
-
-    public static int getSlotFromHit(BlockHitResult hit, boolean empty, boolean quad) {
-        BlockPos blockPos = hit.getBlockPos();
-        Vec3 pos = hit.getLocation();
-
-        double x = Math.abs(pos.x - blockPos.getX());
-        double y = Math.abs(pos.y - blockPos.getY());
-        double z = Math.abs(pos.z - blockPos.getZ());
-
-        int slot;
-
-        if (empty) {
-            slot = hit.getDirection().get3DDataValue();
-        } else {
-            slot = getSlotFromShape(x, y, z);
-        }
-
-        return slot * 4 + ((quad) ? getSubSlotFromPos(slot, x, y, z) : 0);
-    }
-
-    public static List<Integer> getPreciseIndexFromHit(LayingItemEntity entity, BlockHitResult hit, Boolean empty) {
-        List<Integer> list = new ArrayList<>(0);
-
-        for (int i = 0; i < entity.inv.size(); i++) {
-            ItemStack stack = entity.inv.get(i);
-            boolean cuboid = entity.isCuboid(i);
-            boolean quad = entity.quad.get((int) i / 4);
-
-            if (!stack.isEmpty()) {
-                BlockPos blockPos = hit.getBlockPos();
-                Vec3 pos = hit.getLocation();
-
-                double x = Math.abs(pos.x - blockPos.getX());
-                double y = Math.abs(pos.y - blockPos.getY());
-                double z = Math.abs(pos.z - blockPos.getZ());
-
-                boolean contains = contains(x, y, z, ((quad) ? ((cuboid) ? LayingItemEntity.basicQuadShapesBlock.get(i) : LayingItemEntity.basicQuadShapesItem.get(i)) : ((cuboid) ? LayingItemEntity.basicShapesBlock.get((int) i / 4) : LayingItemEntity.basicShapesItem.get((int) i / 4))).bounds());
-
-                if (contains) {
-                    list.add(i);
+                    if (((EatingPlayer) player).ipla$getEatingTicks() % 4 == 0 || ((EatingPlayer) player).ipla$getEatingTicks() == 0) {
+                        level.playSound(player, hitPos, SoundEvents.GENERIC_EAT #if MC_VER >= V1_21_3 .value() #endif, SoundSource.PLAYERS, 1.0F, 1.0F);
+                        IPLA_Methods.spawnItemParticles(player, foodStack, 1);
+                    }
                 }
+            } else {
+                IPLA_Methods.clearEating(player);
             }
-        }
-
-        return list;
+        });
     }
 
-    private static int getIndexFromXY(double a, double b) {
-        return ((a > 0.5) ? 1 : 0) + ((b > 0.5) ? 2 : 0);
+    public static BlockHitResult rayTrace(Level level, Player player, double distance) {
+        Vec3 eyePosition = player.getEyePosition();
+
+        Vec3 lookVector = player.getViewVector(1.0F);
+
+        Vec3 endPosition = eyePosition.add(
+                lookVector.x * distance,
+                lookVector.y * distance,
+                lookVector.z * distance
+        );
+
+        ClipContext context = new ClipContext(
+                eyePosition,
+                endPosition,
+                ClipContext.Block.OUTLINE,
+                ClipContext.Fluid.NONE,
+                player
+        );
+
+        return level.clip(context);
     }
 }

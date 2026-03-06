@@ -12,6 +12,7 @@ import net.minecraft.world.ContainerHelper;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
@@ -28,6 +29,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.logging.Logger;
 
 #if MC_VER >= V1_21_5
 import net.minecraft.world.Containers;
@@ -282,10 +284,26 @@ public class LayingItemEntity extends BlockEntity {
         this.setChanged();
         this.getLevel().sendBlockUpdated(this.getBlockPos(), this.getBlockState(), this.getBlockState(), 3);
 
+
     }
     public void markDirty(@Nullable Entity entity) {
         this.level.gameEvent(GameEvent.BLOCK_CHANGE, this.getBlockPos() #if MC_VER > V1_18_2, GameEvent.Context.of(entity, this.getBlockState()) #endif);
         this.markDirty();
+    }
+
+    public Integer getMaxLightLevel() {
+        int light = 0;
+        for (ItemStack itemStack : this.inv) {
+            if (itemStack.getItem() instanceof BlockItem) {
+                Block block = ((BlockItem) itemStack.getItem()).getBlock();
+                int tempLight = block.defaultBlockState().getLightEmission();
+                if (tempLight > light) {
+                    light = tempLight;
+                }
+            }
+        }
+
+        return light;
     }
 
     #if MC_VER >= V1_21_5
