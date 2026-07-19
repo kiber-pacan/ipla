@@ -43,13 +43,19 @@ repositories {
 }
 
 dependencies {
-    modImplementation "net.fabricmc:fabric-loader:$rootProject.fabric_loader_version"
+    def modImpl = (rootProject.minecraft_version == "26.1.2") ? "implementation" : "modImplementation"
 
-    modImplementation "net.fabricmc.fabric-api:fabric-api:$rootProject.fabric_api_version"
+    "${modImpl}" "net.fabricmc:fabric-loader:$rootProject.fabric_loader_version"
 
-    modImplementation "dev.architectury:architectury-fabric:$rootProject.architectury_api_version"
+    "${modImpl}" "net.fabricmc.fabric-api:fabric-api:$rootProject.fabric_api_version"
 
-    modImplementation("com.terraformersmc:modmenu:${rootProject.modmenu_version}")
+    "${modImpl}" "dev.architectury:architectury-fabric:$rootProject.architectury_api_version"
+
+    if (rootProject.minecraft_version == "26.1.2") {
+        "${modImpl}"("maven.modrinth:modmenu:18.0.0-alpha.6")
+    } else {
+        "${modImpl}"("com.terraformersmc:modmenu:${rootProject.modmenu_version}")
+    }
 
     implementation "com.electronwill.night-config:core:3.6.6"
     shadowBundle "com.electronwill.night-config:core:3.6.6"
@@ -57,8 +63,13 @@ dependencies {
     implementation "com.electronwill.night-config:toml:3.6.6"
     shadowBundle "com.electronwill.night-config:toml:3.6.6"
 
-    common(project(path: ':common', configuration: 'namedElements')) { transitive false }
-    shadowBundle project(path: ':common', configuration: 'transformProductionFabric')
+    if (rootProject.minecraft_version == "26.1.2") {
+        implementation project(path: ':common')
+        shadowBundle project(path: ':common')
+    } else {
+        common(project(path: ':common', configuration: 'namedElements')) { transitive false }
+        shadowBundle project(path: ':common', configuration: 'transformProductionFabric')
+    }
 }
 
 processResources {
@@ -74,6 +85,14 @@ shadowJar {
     archiveClassifier = 'dev-shadow'
 }
 
-remapJar {
-    inputFile.set shadowJar.archiveFile
+if (rootProject.minecraft_version == "26.1.2") {
+    jar {
+        dependsOn shadowJar
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+        from (zipTree(shadowJar.archiveFile))
+    }
+} else {
+    remapJar {
+        inputFile.set shadowJar.archiveFile
+    }
 }

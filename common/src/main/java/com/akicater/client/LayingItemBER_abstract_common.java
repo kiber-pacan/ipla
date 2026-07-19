@@ -23,7 +23,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
+#if MC_VER < V1_21_9
 import net.minecraft.client.renderer.entity.ItemRenderer;
+#endif
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
@@ -39,7 +41,11 @@ import net.minecraft.client.renderer.item.ItemModelResolver;
 import net.minecraft.client.renderer.item.ItemStackRenderState;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
+#if MC_VER >= V26_1_2
+import net.minecraft.client.renderer.state.level.CameraRenderState;
+#else
 import net.minecraft.client.renderer.state.CameraRenderState;
+#endif
 #endif
 
 import com.akicater.IPLA;
@@ -117,7 +123,9 @@ public abstract class #if MC_VER >= V1_21_9 LayingItemBER_abstract_common implem
     public void render(#if MC_VER < V1_21_5 LayingItemEntity entity, float partialTick, PoseStack poseStack, MultiBufferSource buffer, int packedLight, int packedOverlay, #else LayingItemEntity entity, float partialTick, PoseStack poseStack, MultiBufferSource buffer, int packedLight, int packedOverlay, Vec3 cameraPos, #endif float itemSize, float blockSize, float absoluteSize, boolean oldRendering, float dt)
     #endif
     {
+        #if MC_VER < V1_21_9
         ItemRenderer itemRenderer = Minecraft.getInstance().getItemRenderer();
+        #endif
 
         for (int slot = 0; slot < 6; slot++) {
             if (entity.quad.get(slot)) {

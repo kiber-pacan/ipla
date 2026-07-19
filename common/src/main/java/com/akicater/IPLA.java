@@ -190,7 +190,7 @@ public final class IPLA {
                     // Clear slot
                     entity.inv.set(((EatingPlayer) player).ipla$getHit(), ItemStack.EMPTY);
                 } else {
-                    level.playSound((Player)null, player.getX(), player.getY(), player.getZ(), SoundEvents.PLAYER_BURP, SoundSource.PLAYERS, 0.5F, level.random.nextFloat() * 0.1F + 0.9F);
+                    level.playSound((Player)null, player.getX(), player.getY(), player.getZ(), SoundEvents.PLAYER_BURP, SoundSource.PLAYERS, 0.5F, #if MC_VER >= V26_1_2 level.getRandom() #else level.random #endif.nextFloat() * 0.1F + 0.9F);
                 }
 
 

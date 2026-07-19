@@ -6,7 +6,9 @@ import com.akicater.blocks.LayingItem;
 import com.akicater.blocks.LayingItemEntity;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
+#if MC_VER < V26_1_2
 import net.minecraft.client.resources.model.Material;
+#endif
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;

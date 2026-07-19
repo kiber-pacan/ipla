@@ -1,6 +1,7 @@
 plugins {
-    id 'dev.architectury.loom' version '1.13-SNAPSHOT' apply false
-    id 'architectury-plugin' version '3.4-SNAPSHOT'
+    id 'dev.architectury.loom' version '1.17.491' apply false
+    id 'dev.architectury.loom-no-remap' version '1.17.491' apply false
+    id 'architectury-plugin' version '3.5.169'
     id 'com.gradleup.shadow' version '8.3.6' apply false
 
     id 'systems.manifold.manifold-gradle-plugin' version '0.0.2-alpha'
@@ -73,7 +74,11 @@ allprojects {
 }
 
 subprojects {
-    apply plugin: 'dev.architectury.loom'
+    if (rootProject.minecraft_version == "26.1.2") {
+        apply plugin: 'dev.architectury.loom-no-remap'
+    } else {
+        apply plugin: 'dev.architectury.loom'
+    }
     apply plugin: "systems.manifold.manifold-gradle-plugin"
 
     apply plugin: "de.maxhenkel.cursegradle"
@@ -98,6 +103,9 @@ subprojects {
         toolchain {
             if (project.java_version == "17") {
                 languageVersion = JavaLanguageVersion.of(17)
+                vendor = JvmVendorSpec.ADOPTIUM
+            } else if (project.java_version == "25") {
+                languageVersion = JavaLanguageVersion.of(25)
                 vendor = JvmVendorSpec.ADOPTIUM
             } else {
                 languageVersion = JavaLanguageVersion.of(21)
@@ -153,12 +161,18 @@ subprojects {
         annotationProcessor("systems.manifold:manifold-preprocessor:${manifold_version}")
         testAnnotationProcessor("systems.manifold:manifold-preprocessor:${manifold_version}")
 
-        minecraft "net.minecraft:minecraft:$rootProject.minecraft_version"
+        if (rootProject.minecraft_version == "26.1.2") {
+            minecraft "com.mojang:minecraft:$rootProject.minecraft_version"
+        } else {
+            minecraft "net.minecraft:minecraft:$rootProject.minecraft_version"
 
-        // Mappings
-        mappings loom.layered() {
-            officialMojangMappings()
-            parchment("org.parchmentmc.data:parchment-${rootProject.minecraft_version}:${rootProject.parchment}@zip")
+            // Mappings
+            mappings loom.layered() {
+                officialMojangMappings()
+                if (rootProject.hasProperty("parchment") && rootProject.parchment) {
+                    parchment("org.parchmentmc.data:parchment-${rootProject.minecraft_version}:${rootProject.parchment}@zip")
+                }
+            }
         }
     }
 
@@ -173,12 +187,12 @@ subprojects {
 
 
     modrinth {
-        token = credentials.getProperty("modrinthToken")
+        token = credentials.getProperty("modrinthToken") ?: "dummy"
         projectId = "ipla"
         versionName = archives_name + " " + mod_version
         versionNumber = mod_version
         versionType = "release"
-        uploadFile = remapJar
+        uploadFile = (rootProject.minecraft_version == "26.1.2") ? jar : remapJar
         gameVersions = [rootProject.minecraft_version]
         loaders = [loader]
         changelog = file("CHANGELOG.md").toString()
@@ -197,7 +211,7 @@ subprojects {
 
 
     curseforge {
-        apiKey = credentials.getProperty("curseToken")
+        apiKey = credentials.getProperty("curseToken") ?: "dummy"
 
         project {
             id = "1124962"
@@ -207,7 +221,7 @@ subprojects {
             addGameVersion(rootProject.minecraft_version)
             addGameVersion((loader == "neoforge") ? "NeoForge" : loader.capitalize()) // Fuck me...
 
-            mainArtifact(remapJar) {
+            mainArtifact((rootProject.minecraft_version == "26.1.2") ? jar : remapJar) {
                 displayName = archives_name + " " + mod_version
                 changelog = file("CHANGELOG.md").toString()
                 changelogType = "markdown"

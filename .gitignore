@@ -47,3 +47,6 @@ wrapper/
 daemon/
 
 credentials.properties
+
+# Local JDK
+jdk-25/

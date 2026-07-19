@@ -9,7 +9,11 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 
 #if MC_VER >= V1_21_9
 import net.minecraft.client.renderer.SubmitNodeCollector;
+#if MC_VER >= V26_1_2
+import net.minecraft.client.renderer.state.level.CameraRenderState;
+#else
 import net.minecraft.client.renderer.state.CameraRenderState;
+#endif
 #elif MC_VER >= V1_21_5
 import net.minecraft.world.phys.Vec3;
 #endif

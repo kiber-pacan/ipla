@@ -56,10 +56,17 @@ public class LayingItem extends BaseEntityBlock implements SimpleWaterloggedBloc
         this.registerDefaultState(this.stateDefinition.any().setValue(WATERLOGGED, false).setValue(LIGHT, 0));
     }
 
+    #if MC_VER >= V26_1_2
+    @Override
+    protected int getLightDampening(BlockState state) {
+        return -state.getValue(LIGHT).intValue();
+    }
+    #else
     @Override
     #if MC_VER >= V1_21 protected #else public  #endif int getLightBlock(BlockState state #if MC_VER < V1_21_3, BlockGetter level, BlockPos pos #endif) {
         return -state.getValue(LIGHT).intValue();
     }
+    #endif
 
     public static int getLuminance(BlockState state) {
         return state.getValue(LIGHT).intValue();

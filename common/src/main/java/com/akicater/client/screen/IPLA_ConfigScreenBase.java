@@ -4,7 +4,9 @@ import com.akicater.IPLA;
 #if MC_VER >= V1_20_1
 import com.akicater.IPLA_Client;
 import net.minecraft.client.Minecraft;
+#if MC_VER < V26_1_2
 import net.minecraft.client.gui.GuiGraphics;
+#endif
 #endif
 
 import com.akicater.IPLA_Client;
@@ -56,6 +58,12 @@ public class IPLA_ConfigScreenBase extends Screen {
         this.rotationPower = config.rotationPower;
     }
 
+    #if MC_VER >= V26_1_2
+    @Override
+    public void extractRenderState(net.minecraft.client.gui.GuiGraphicsExtractor x1, int mouseX, int mouseY, float delta) {
+        super.extractRenderState(x1, mouseX, mouseY, delta);
+    }
+    #else
     @Override
     public void render(#if MC_VER >= V1_20_1 GuiGraphics x1 #else PoseStack x1 #endif, int mouseX, int mouseY, float delta) {
         #if MC_VER <= V1_20_4
@@ -63,6 +71,7 @@ public class IPLA_ConfigScreenBase extends Screen {
         #endif
         super.render(x1, mouseX, mouseY, delta);
     }
+    #endif
 
 
 
