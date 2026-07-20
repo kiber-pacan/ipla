@@ -42,8 +42,10 @@ replay_*.log
 buildAllJars/
 
 wrapper/
+!gradle/wrapper/
 
 *.jar
+!gradle/wrapper/gradle-wrapper.jar
 daemon/
 
 credentials.properties
