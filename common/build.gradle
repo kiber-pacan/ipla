@@ -12,13 +12,12 @@ repositories {
 }
 
 dependencies {
-    if (Integer.valueOf(index) < 18) {
-        modImplementation "net.fabricmc:fabric-loader:$rootProject.fabric_loader_version"
-        modImplementation "dev.architectury:architectury:$rootProject.architectury_api_version"
-    } else {
-        implementation "net.fabricmc:fabric-loader:$rootProject.fabric_loader_version"
-        implementation "dev.architectury:architectury:$rootProject.architectury_api_version"
-    }
+    def impl_type = (Integer.valueOf(index) < 18) ? "modImplementation" : "implementation"
+
+    add impl_type, "net.fabricmc:fabric-loader:$rootProject.fabric_loader_version"
+    add impl_type, "dev.architectury:architectury:$rootProject.architectury_api_version"
+    add impl_type, "maven.modrinth:jade:${rootProject.jade_version}+fabric"
+
 
     implementation "com.electronwill.night-config:core:3.6.6"
     implementation "com.electronwill.night-config:toml:3.6.6"
