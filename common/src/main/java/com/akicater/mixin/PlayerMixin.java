@@ -1,22 +1,18 @@
-package com.akicater.client.mixin;
+package com.akicater.mixin;
 
+import com.akicater.EatingPlayer;
 import com.akicater.blocks.LayingItemEntity;
-import com.akicater.client.EatingPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.state.BlockState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 
-import java.util.List;
-
 @Mixin(Player.class)
 public class PlayerMixin implements EatingPlayer {
-    @Unique private Integer ipla$eatingIplaTicks = 0;
+    @Unique private int ipla$eatingIplaTicks = 0;
     @Unique private ItemStack ipla$targetIplaFood = null;
-    @Unique private Boolean ipla$isEatingIpla = false;
+    @Unique private boolean ipla$isEatingIpla = false;
     @Unique private BlockPos ipla$foodPos = null;
     @Unique private Integer ipla$hit = null;
     @Unique private LayingItemEntity ipla$layingItemEntity = null;

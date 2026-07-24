@@ -4,12 +4,19 @@ import com.akicater.IPLA;
 import com.akicater.IPLA_Client;
 import com.akicater.blocks.LayingItemEntity;
 import com.mojang.blaze3d.vertex.PoseStack;
+#if MC_VER < V26_2
 import net.minecraft.client.renderer.MultiBufferSource;
+#endif
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 
 #if MC_VER >= V1_21_9
 import net.minecraft.client.renderer.SubmitNodeCollector;
+#if MC_VER >= V26_1
+import net.minecraft.client.renderer.state.level.CameraRenderState;
+#else
 import net.minecraft.client.renderer.state.CameraRenderState;
+#endif
+
 #elif MC_VER >= V1_21_5
 import net.minecraft.world.phys.Vec3;
 #endif

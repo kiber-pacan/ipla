@@ -283,9 +283,8 @@ public class LayingItemEntity extends BlockEntity {
     public void markDirty() {
         this.setChanged();
         this.getLevel().sendBlockUpdated(this.getBlockPos(), this.getBlockState(), this.getBlockState(), 3);
-
-
     }
+
     public void markDirty(@Nullable Entity entity) {
         this.level.gameEvent(GameEvent.BLOCK_CHANGE, this.getBlockPos() #if MC_VER > V1_18_2, GameEvent.Context.of(entity, this.getBlockState()) #endif);
         this.markDirty();

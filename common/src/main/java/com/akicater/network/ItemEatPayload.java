@@ -28,7 +28,7 @@ import org.spongepowered.asm.mixin.Unique;
 #endif
 
 import com.akicater.IPLA_Methods;
-import com.akicater.client.EatingPlayer;
+import com.akicater.EatingPlayer;
 import net.minecraft.world.entity.player.Player;
 
 public #if MC_VER >= V1_21 record #else class #endif ItemEatPayload #if MC_VER >= V1_21 (Boolean ipla$isEatingIpla) implements CustomPacketPayload #endif {
