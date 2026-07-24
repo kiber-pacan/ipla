@@ -3,7 +3,6 @@ package com.akicater;
 import com.akicater.blocks.LayingItem;
 import com.akicater.blocks.LayingItemEntity;
 
-import com.akicater.client.EatingPlayer;
 import com.akicater.network.ItemEatPayload;
 import com.akicater.network.ItemPlacePayload;
 import com.akicater.network.ItemRotatePayload;
@@ -156,107 +155,117 @@ public final class IPLA {
 		#endif
 
         TickEvent.Player.PLAYER_POST.register((player) -> {
-            Vec3 pos = player.getEyePosition();
-            BlockPos blockPos = ((EatingPlayer) player).ipla$getFoodPos();
+            if (player instanceof EatingPlayer eatingPlayer) {
+                Vec3 pos = player.getEyePosition();
+                BlockPos blockPos = eatingPlayer.ipla$getFoodPos();
 
-            double distance = (blockPos != null) ? ((EatingPlayer) player).ipla$getFoodPos().distToCenterSqr(pos.x, pos.y, pos.z) : 0;
+                double distance = (blockPos != null) ? eatingPlayer.ipla$getFoodPos().distToCenterSqr(pos.x, pos.y, pos.z) : 0;
 
-            ItemStack targetFood = ((EatingPlayer) player).ipla$getTargetFood();
-            Level level = #if MC_VER >= V1_20_1 player.level(); #else player.level; #endif
+                ItemStack targetFood = eatingPlayer.ipla$getTargetFood();
+                Level level = #if MC_VER >= V1_20_1 player.level(); #else player.level; #endif
 
-            // Preventing eating of certain conditions
-            if (player.isDiscrete() || distance >= 16 || !player.canEat(true)) {
-                IPLA_Methods.clearEatingPlayer(player);
-                return;
-            }
+                // Preventing eating of certain conditions
+                if (player.isDiscrete() || distance >= 16 || !player.canEat(true)) {
+                    IPLA_Methods.clearEatingPlayer(player);
+                    return;
+                }
 
-            // Maybe this unfucks eating with hunger 100
-            if (!player.canEat(true)) {
-                IPLA_Methods.clearEating(player);
-                return;
-            }
+                // Maybe this unfucks eating with hunger 100
+                if (!player.canEat(true)) {
+                    IPLA_Methods.clearEating(player);
+                    return;
+                }
 
-            // Eat food
-            if (((EatingPlayer) player).ipla$getEatingTicks() >= 32 && !player.isDiscrete()) {
-                LayingItemEntity entity = ((EatingPlayer) player).ipla$getLayingItemEntity();
+                // Eat food
+                if (eatingPlayer.ipla$getEatingTicks() >= 32 && !player.isDiscrete()) {
 
-                if (!player.isCreative()) {
+                    LayingItemEntity entity = eatingPlayer.ipla$getLayingItemEntity();
+
+                    if (!player.isCreative()) {
                     #if MC_VER >= V1_21_3
                     player.getFoodData().eat(targetFood.get(DataComponents.FOOD));
                     #else
-                    player.eat(level, targetFood);
+                        player.eat(level, targetFood);
                     #endif
 
-                    // Clear slot
-                    entity.inv.set(((EatingPlayer) player).ipla$getHit(), ItemStack.EMPTY);
+                        // Clear slot
+                        entity.inv.set(eatingPlayer.ipla$getHit(), ItemStack.EMPTY);
+                    } else {
+                        level.playSound(player, player.getX(), player.getY(), player.getZ(), SoundEvents.PLAYER_BURP, SoundSource.PLAYERS, 0.5F, level. #if MC_VER >= V26_1 getRandom() #else random #endif.nextFloat() * 0.1F + 0.9F);
+                    }
+
+                    // Clear player eating values
+                    IPLA_Methods.clearEatingPlayer(player);
+
+                    entity.markDirty(player);
+
+                    if (entity.isEmpty()) {
+                        level.setBlockAndUpdate(blockPos, Blocks.AIR.defaultBlockState());
+                    }
+                }
+
+                // Tick
+                if (eatingPlayer.ipla$isEating()) {
+                    double reachDistance = 5.0;
+                    BlockHitResult hitResult = rayTrace(#if MC_VER >= V1_20_1 player.level() #else player.level #endif, player, reachDistance);
+
+                    // If not looking at Block return
+                    if (hitResult == null) {
+                        IPLA_Methods.clearEatingPlayer(player);
+                        return;
+                    }
+
+                    BlockPos hitPos = hitResult.getBlockPos();
+                    LayingItemEntity entity = null;
+                    if (level.getChunk(hitPos).getBlockEntity(hitPos) instanceof LayingItemEntity) {
+                        entity = (LayingItemEntity) level.getChunk(hitPos).getBlockEntity(hitPos);
+                    } else {
+                        IPLA_Methods.clearEatingPlayer(player);
+                        return;
+                    }
+
+                    // If not looking at LayingItemEntity return
+                    if (entity == null) {
+                        IPLA_Methods.clearEatingPlayer(player);
+                        return;
+                    }
+
+                    ItemStack foodStack = ItemStack.EMPTY;
+
+                    List<Integer> hits = IPLA_Methods.getPreciseIndexFromHit(entity, hitResult, true);
+                    Integer hit = null;
+
+                    // Get first food item
+                    for (int index : hits) {
+                        ItemStack stack = entity.inv.get(index);
+                        boolean food = #if MC_VER >= V1_21 ((FoodProperties) stack.get(DataComponents.FOOD)) != null; #else stack.getItem().isEdible(); #endif
+
+                        if (!stack.isEmpty() && food) {
+                            hit = index;
+                            foodStack = stack;
+                        }
+                    }
+
+                    if (foodStack != ItemStack.EMPTY) {
+                        eatingPlayer.ipla$setEating(true);
+                        eatingPlayer.ipla$setTargetFood(foodStack);
+                        eatingPlayer.ipla$setFoodPos(hitPos);
+                        eatingPlayer.ipla$setHit(hit);
+                        eatingPlayer.ipla$setLayingItemEntity(entity);
+
+                        eatingPlayer.ipla$tickEating();
+
+                        if (eatingPlayer.ipla$getEatingTicks() % 4 == 0 || eatingPlayer.ipla$getEatingTicks() == 0) {
+                            level.playSound(player, hitPos, SoundEvents.GENERIC_EAT #if MC_VER >= V1_21_3 .value() #endif, SoundSource.PLAYERS, 1.0F, 1.0F);
+                            IPLA_Methods.spawnItemParticles(player, foodStack, 1);
+                        }
+
+                        //player.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(0.02D);
+                    }
                 } else {
-                    level.playSound((Player)null, player.getX(), player.getY(), player.getZ(), SoundEvents.PLAYER_BURP, SoundSource.PLAYERS, 0.5F, level.random.nextFloat() * 0.1F + 0.9F);
+                    //player.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(player.getAbilities().getWalkingSpeed());
+                    IPLA_Methods.clearEating(player);
                 }
-
-
-
-                // Clear player eating values
-                IPLA_Methods.clearEatingPlayer(player);
-
-                entity.markDirty(player);
-
-                if (entity.isEmpty()) {
-                    level.setBlockAndUpdate(blockPos, Blocks.AIR.defaultBlockState());
-                }
-            }
-
-            // Tick
-            if (((EatingPlayer) player).ipla$isEating()) {
-                double reachDistance = 5.0;
-                BlockHitResult hitResult = rayTrace(#if MC_VER >= V1_20_1 player.level() #else player.level #endif, player, reachDistance);
-
-                // If not looking at Block return
-                if (hitResult == null) {
-                    IPLA_Methods.clearEatingPlayer(player);
-                    return;
-                }
-
-                BlockPos hitPos = hitResult.getBlockPos();
-                LayingItemEntity entity = (LayingItemEntity) level.getChunk(hitPos).getBlockEntity(hitPos);
-
-                // If not looking at LayingItemEntity return
-                if (entity == null) {
-                    IPLA_Methods.clearEatingPlayer(player);
-                    return;
-                }
-
-                ItemStack foodStack = ItemStack.EMPTY;
-
-                List<Integer> hits = IPLA_Methods.getPreciseIndexFromHit(entity, hitResult, true);
-                Integer hit = null;
-
-                // Get first food item
-                for (int index : hits) {
-                    ItemStack stack = entity.inv.get(index);
-                    boolean food = #if MC_VER >= V1_21 ((FoodProperties) stack.get(DataComponents.FOOD)) != null; #else stack.getItem().isEdible(); #endif
-
-                    if (!stack.isEmpty() && food) {
-                        hit = index;
-                        foodStack = stack;
-                    }
-                }
-
-                if (foodStack != ItemStack.EMPTY) {
-                    ((EatingPlayer) player).ipla$setEating(true);
-                    ((EatingPlayer) player).ipla$setTargetFood(foodStack);
-                    ((EatingPlayer) player).ipla$setFoodPos(hitPos);
-                    ((EatingPlayer) player).ipla$setHit(hit);
-                    ((EatingPlayer) player).ipla$setLayingItemEntity(entity);
-
-                    ((EatingPlayer) player).ipla$tickEating();
-
-                    if (((EatingPlayer) player).ipla$getEatingTicks() % 4 == 0 || ((EatingPlayer) player).ipla$getEatingTicks() == 0) {
-                        level.playSound(player, hitPos, SoundEvents.GENERIC_EAT #if MC_VER >= V1_21_3 .value() #endif, SoundSource.PLAYERS, 1.0F, 1.0F);
-                        IPLA_Methods.spawnItemParticles(player, foodStack, 1);
-                    }
-                }
-            } else {
-                IPLA_Methods.clearEating(player);
             }
         });
     }
