@@ -3,11 +3,14 @@ package com.akicater.client.screen;
 import com.akicater.IPLA;
 #if MC_VER >= V1_20_1
 import com.akicater.IPLA_Client;
+import net.minecraft.client.Minecraft;
 #if MC_VER < V26_1
 import net.minecraft.client.gui.GuiGraphics;
 #endif
 #endif
+
 import com.akicater.IPLA_Client;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Checkbox;
@@ -17,6 +20,7 @@ import net.minecraft.client.gui.screens.Screen;
 #if MC_VER < V1_20_1
 import com.mojang.blaze3d.vertex.PoseStack;
 #endif
+
 
 
 import static com.akicater.IPLA_Client.config;
@@ -32,28 +36,22 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TextComponent;
 #endif
 
-public class IPLA_ConfigScreenScale extends Screen {
+public class IPLA_ConfigScreenFunctions extends Screen {
     private final Screen parent;
 
     private static final #if MC_VER >= V1_19_2 Component #else TextComponent #endif TITLE = #if MC_VER >= V1_19_2 Component.literal #else new TextComponent #endif ("IPLA config");
 
-    private float blockScale;
-    private float itemScale;
 
-    private static final float STEP = 0.125f;
+    private boolean oldRendering;
+    private boolean eatFood;
 
-    private float snap(float v) {
-        return Math.round(v / STEP) * STEP;
-    }
-
-
-    public IPLA_ConfigScreenScale(Screen parent) {
+    public IPLA_ConfigScreenFunctions(Screen parent) {
         super(TITLE);
 
         this.parent = parent;
 
-        this.blockScale = config.blockScale;
-        this.itemScale = config.itemScale;
+        this.oldRendering = config.oldRendering;
+        this.eatFood = config.eatFood;
     }
 
     #if MC_VER < V26_1
@@ -77,48 +75,56 @@ public class IPLA_ConfigScreenScale extends Screen {
         int gap = 4;
 
 
-        // Block scale
-        this.addRenderableWidget(new AbstractSliderButton(
-                x, y, widthButton, heightButton,
-        #if MC_VER >= V1_19_2 Component.literal #else new TextComponent #endif ("Block scale"),
-                normalize(blockScale)
-        ) {
+        // Old rendering checkbox
+        #if MC_VER >= V1_20_4
+        this.addRenderableWidget(Checkbox.builder(Component.literal("Old rendering"), this.font)
+                #if MC_VER >= V1_21 .maxWidth(width) #endif
+                .selected(oldRendering)
+                .onValueChange((cb, state) -> {
+                    oldRendering = state;
+                    config.saveConfig();
+                })
+                .pos(x, y)
+                .build());
+        #else
+        this.addRenderableWidget(new Checkbox(x, y, widthButton, heightButton,
+                #if MC_VER >= V1_19_2 Component.literal #else new TextComponent #endif ("Old rendering"), oldRendering) {
             @Override
-            protected void updateMessage() {
-                setMessage(#if MC_VER >= V1_19_2 Component.literal #else new TextComponent #endif
-                        (String.format("Block scale: %.3f", blockScale)));
-            }
-
-            @Override
-            protected void applyValue() {
-                blockScale = snap(denormalize((float) value));
-                config.blockScale = blockScale;
+            public void onPress() {
+                super.onPress();
+                oldRendering = this.selected();
+                config.oldRendering = oldRendering;
             }
         });
+        #endif
         y += heightButton + gap;
 
-
-        // Item scale
-        this.addRenderableWidget(new AbstractSliderButton(
-                x, y, widthButton, heightButton,
-        #if MC_VER >= V1_19_2 Component.literal #else new TextComponent #endif ("Item scale"),
-                normalize(itemScale)
-        ) {
+        // Eat food checkbox
+        #if MC_VER >= V1_20_4
+        this.addRenderableWidget(Checkbox.builder(Component.literal("Old rendering"), this.font)
+                #if MC_VER >= V1_21 .maxWidth(width) #endif
+                .selected(eatFood)
+                .onValueChange((cb, state) -> {
+                    eatFood = state;
+                    config.saveConfig();
+                })
+                .pos(x, y)
+                .build());
+        #else
+        this.addRenderableWidget(new Checkbox(x, y, widthButton, heightButton,
+                #if MC_VER >= V1_19_2 Component.literal #else new TextComponent #endif ("Eat food"), eatFood) {
             @Override
-            protected void updateMessage() {
-                setMessage(#if MC_VER >= V1_19_2 Component.literal #else new TextComponent #endif
-                        (String.format("Item scale: %.3f", itemScale)));
-            }
-
-            @Override
-            protected void applyValue() {
-                itemScale = snap(denormalize((float) value));
-                config.itemScale = itemScale;
+            public void onPress() {
+                super.onPress();
+                eatFood = this.selected();
+                config.eatFood = eatFood;
             }
         });
-
+        #endif
         y += (heightButton + gap) * 4;
+
         y += heightButton + gap * 4;
+
 
         // Reset
         #if MC_VER >= V1_19_4
@@ -167,11 +173,11 @@ public class IPLA_ConfigScreenScale extends Screen {
 
     public void reload() {
         clearWidgets();
-        config.defaultScaleConfig();
+        config.defaultFunctionsConfig();
         config.saveConfig();
 
-        this.blockScale = config.blockScale;
-        this.itemScale = config.itemScale;
+        this.oldRendering = config.oldRendering;
+        this.eatFood = config.eatFood;
 
         init();
     }

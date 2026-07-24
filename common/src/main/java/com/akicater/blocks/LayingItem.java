@@ -1,8 +1,6 @@
 package com.akicater.blocks;
 
-import com.akicater.IPLA;
 import com.akicater.IPLA_Methods;
-import com.akicater.client.EatingPlayer;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -19,7 +17,6 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.food.FoodProperties;
-import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.*;
@@ -34,7 +31,6 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 #if MC_VER <= V1_21_10
-import org.apache.commons.logging.Log;
 #endif
 import org.jetbrains.annotations.NotNull;
 
@@ -43,7 +39,6 @@ import net.minecraft.util.RandomSource;
 #endif
 
 import java.util.List;
-import java.util.logging.Logger;
 
 
 public class LayingItem extends BaseEntityBlock implements SimpleWaterloggedBlock {
@@ -56,10 +51,12 @@ public class LayingItem extends BaseEntityBlock implements SimpleWaterloggedBloc
         this.registerDefaultState(this.stateDefinition.any().setValue(WATERLOGGED, false).setValue(LIGHT, 0));
     }
 
+    #if MC_VER < V26_1
     @Override
     #if MC_VER >= V1_21 protected #else public  #endif int getLightBlock(BlockState state #if MC_VER < V1_21_3, BlockGetter level, BlockPos pos #endif) {
         return -state.getValue(LIGHT).intValue();
     }
+    #endif
 
     public static int getLuminance(BlockState state) {
         return state.getValue(LIGHT).intValue();

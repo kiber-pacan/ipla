@@ -3,6 +3,10 @@ package com.akicater.client;
 #if MC_VER >= V1_19_4
 import com.akicater.IPLA_Client;
 import com.mojang.math.Axis;
+#if MC_VER >= V26_1
+import net.minecraft.client.renderer.state.level.CameraRenderState;
+#endif
+
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.NonNullList;
 import net.minecraft.world.item.ItemDisplayContext;
@@ -20,10 +24,17 @@ import net.minecraft.core.Direction;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
+#if MC_VER < V26_2
 import net.minecraft.client.renderer.MultiBufferSource;
+#endif
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
+#if MC_VER >= V1_21_9
+import net.minecraft.client.renderer.item.ItemModelResolver;
+#endif
+#if MC_VER < V26_1
 import net.minecraft.client.renderer.entity.ItemRenderer;
+#endif
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
@@ -35,11 +46,12 @@ import java.util.logging.Logger;
 import com.akicater.blocks.LayingItemEntity;
 
 #if MC_VER >= V1_21_9
-import net.minecraft.client.renderer.item.ItemModelResolver;
 import net.minecraft.client.renderer.item.ItemStackRenderState;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
+#if MC_VER < V26_1
 import net.minecraft.client.renderer.state.CameraRenderState;
+#endif
 #endif
 
 import com.akicater.IPLA;
@@ -111,14 +123,18 @@ public abstract class #if MC_VER >= V1_21_9 LayingItemBER_abstract_common implem
     }
     #endif
 
+
     #if MC_VER >= V1_21_9
     public void render(LayingItemBERS entity, PoseStack poseStack, SubmitNodeCollector nodeCollector, CameraRenderState cameraRenderState, float itemSize, float blockSize, float absoluteSize, boolean oldRendering)
     #else
     public void render(#if MC_VER < V1_21_5 LayingItemEntity entity, float partialTick, PoseStack poseStack, MultiBufferSource buffer, int packedLight, int packedOverlay, #else LayingItemEntity entity, float partialTick, PoseStack poseStack, MultiBufferSource buffer, int packedLight, int packedOverlay, Vec3 cameraPos, #endif float itemSize, float blockSize, float absoluteSize, boolean oldRendering, float dt)
     #endif
     {
+        #if MC_VER >= V26_1
+        ItemModelResolver itemRenderer = Minecraft.getInstance().getItemModelResolver();
+        #else
         ItemRenderer itemRenderer = Minecraft.getInstance().getItemRenderer();
-
+        #endif
         for (int slot = 0; slot < 6; slot++) {
             if (entity.quad.get(slot)) {
                 float iSize = itemSize * absoluteSize / IPLA_Client.config.itemScale;
