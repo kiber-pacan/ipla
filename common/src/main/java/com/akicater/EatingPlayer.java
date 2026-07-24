@@ -1,11 +1,9 @@
-package com.akicater.client;
+package com.akicater;
 
 
 import com.akicater.blocks.LayingItemEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.ItemStack;
-
-import java.util.List;
 
 public interface EatingPlayer {
     int ipla$getEatingTicks();
