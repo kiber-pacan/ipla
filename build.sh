@@ -6,7 +6,7 @@ echo "-------------------------------"
 mkdir -p buildAllJars | true
 y=2
 
-for i in $(seq 16 $END); do
+for i in $(seq 20 $END); do
     sh gradlew :fabric:build -Pindex="$y"
 
     if [ "$y" -eq 6 ]; then
