@@ -42,9 +42,14 @@ repositories {
 dependencies {
     neoForge "net.neoforged:neoforge:${rootProject.neoforge_version}"
 
-    modImplementation "dev.architectury:architectury-neoforge:${rootProject.architectury_api_version}"
+    if (Integer.valueOf(index) < 18) {
+        common(project(path: ':common', configuration: 'namedElements')) { transitive false }
+        modImplementation "dev.architectury:architectury-neoforge:${rootProject.architectury_api_version}"
+    } else {
+        common(project(path: ':common')) { transitive false }
+        implementation "dev.architectury:architectury-neoforge:${rootProject.architectury_api_version}"
+    }
 
-    common(project(path: ':common', configuration: 'namedElements')) { transitive false }
     shadowBundle(project(path: ':common', configuration: 'transformProductionNeoForge'))
 }
 
@@ -61,6 +66,20 @@ shadowJar {
     archiveClassifier = 'dev-shadow'
 }
 
-remapJar {
-    input.set shadowJar.archiveFile
+if (Integer.valueOf(index) < 18) {
+    remapJar {
+        inputFile.set shadowJar.archiveFile
+    }
+} else {
+    jar {
+        archiveClassifier.set("dev")
+    }
+    shadowJar {
+        archiveClassifier.set("")
+    }
+    assemble {
+        dependsOn("shadowJar")
+    }
 }
+
+

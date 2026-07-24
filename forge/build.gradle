@@ -67,3 +67,9 @@ shadowJar {
 remapJar {
     input.set shadowJar.archiveFile
 }
+
+loom {
+    forge {
+        mixinConfigs("ipla.mixins.json")
+    }
+}

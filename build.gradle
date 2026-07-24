@@ -1,13 +1,16 @@
+import net.darkhax.curseforgegradle.TaskPublishCurseForge
+
 plugins {
-    id 'dev.architectury.loom' version '1.13-SNAPSHOT' apply false
-    id 'architectury-plugin' version '3.4-SNAPSHOT'
-    id 'com.gradleup.shadow' version '8.3.6' apply false
+    id "dev.architectury.loom" version "1.17-SNAPSHOT" apply false
+    id "architectury-plugin" version "3.5-SNAPSHOT"
+    id "com.gradleup.shadow" version "8.3.6" apply false
 
-    id 'systems.manifold.manifold-gradle-plugin' version '0.0.2-alpha'
+    id "systems.manifold.manifold-gradle-plugin" version "0.0.2-alpha"
 
-    id 'de.maxhenkel.cursegradle' version "1.5.1" apply false
-    id "com.modrinth.minotaur" version '2.+' apply false
+    id "com.modrinth.minotaur" version "2.+" apply false
+    id "net.darkhax.curseforgegradle" version "1.3.33" apply false
 }
+
 
 project.gradle.ext.getProperties().each { prop ->
     if (prop.key != null && prop.value != null)
@@ -34,20 +37,11 @@ allprojects {
     group = rootProject.maven_group
 
     repositories {
-        maven {
-            url = 'https://maven.parchmentmc.org'
-        }
-
-        maven {
-            url "https://maven.shedaniel.me/"
-        }
-
-        maven {
-            url = 'https://maven.architectury.dev/'
-        }
+        maven { url = 'https://maven.parchmentmc.org' }
+        maven { url "https://maven.shedaniel.me/" }
+        maven { url = 'https://maven.architectury.dev/' }
     }
 
-    // Setting manifold LOADER as compiler parameter
     def loaders = [
             "common" : 0,
             "fabric" : 1,
@@ -67,46 +61,45 @@ allprojects {
     }
 
     tasks.withType(JavaCompile).configureEach {
-        //options.annotationProcessorGeneratedSourcesDirectory = file("$buildDir/generated/sources/annotations")
         options.compilerArgs += ["-ALOADER=${loaders[loader]}"]
     }
 }
 
 subprojects {
-    apply plugin: 'dev.architectury.loom'
+    if (Integer.valueOf(index) < 18) {
+        apply plugin: 'dev.architectury.loom'
+    } else {
+        apply plugin: 'dev.architectury.loom-no-remap'
+    }
+
     apply plugin: "systems.manifold.manifold-gradle-plugin"
 
-    apply plugin: "de.maxhenkel.cursegradle"
+    apply plugin: "net.darkhax.curseforgegradle"
     apply plugin: "com.modrinth.minotaur"
 
     base {
         archivesName = "$rootProject.archives_name-mc$project.minecraft_version-$project.name"
     }
 
-
     configurations {
         testImplementation.extendsFrom annotationProcessor
     }
 
     loom {
-        silentMojangMappingsLicense()
+        if (Integer.valueOf(index) < 18) {
+            silentMojangMappingsLicense()
+        }
     }
 
     java {
         withSourcesJar()
 
         toolchain {
-            if (project.java_version == "17") {
-                languageVersion = JavaLanguageVersion.of(17)
-                vendor = JvmVendorSpec.ADOPTIUM
-            } else {
-                languageVersion = JavaLanguageVersion.of(21)
-                vendor = JvmVendorSpec.ADOPTIUM
-            }
+            vendor = JvmVendorSpec.ADOPTIUM
+            languageVersion = JavaLanguageVersion.of(Integer.parseInt(project.java_version))
         }
     }
 
-    // Parameters of mod
     processResources {
         def replaceProperties = [
                 mod_version : project.mod_version,
@@ -140,92 +133,88 @@ subprojects {
 
         filesMatching(files) {
             replaceProperties.eachWithIndex {
-                expand(replaceProperties) {
-                    replaceProperties
-                }
+                expand(replaceProperties) { replaceProperties }
             }
         }
     }
 
-
     dependencies {
-        // Manifold preprocessor
         annotationProcessor("systems.manifold:manifold-preprocessor:${manifold_version}")
         testAnnotationProcessor("systems.manifold:manifold-preprocessor:${manifold_version}")
 
         minecraft "net.minecraft:minecraft:$rootProject.minecraft_version"
 
-        // Mappings
-        mappings loom.layered() {
-            officialMojangMappings()
-            parchment("org.parchmentmc.data:parchment-${rootProject.minecraft_version}:${rootProject.parchment}@zip")
+        if (Integer.valueOf(index) < 18) {
+            mappings loom.layered() {
+                officialMojangMappings()
+                parchment("org.parchmentmc.data:parchment-${rootProject.minecraft_version}:${rootProject.parchment}@zip")
+            }
         }
     }
 
-
     def loader = project.name
 
-    // Reading tokens
     def credentials = new Properties()
     if (new File("${rootDir}/credentials.properties").exists()) {
         credentials.load(new FileInputStream("${rootDir}/credentials.properties"))
     }
 
-
-    modrinth {
-        token = credentials.getProperty("modrinthToken")
-        projectId = "ipla"
-        versionName = archives_name + " " + mod_version
-        versionNumber = mod_version
-        versionType = "release"
-        uploadFile = remapJar
-        gameVersions = [rootProject.minecraft_version]
-        loaders = [loader]
-        changelog = file("CHANGELOG.md").toString()
-        dependencies {
-            if (loader.equals("fabric")) {
-                required.project "fabric-api"
-                required.project "modmenu"
-                required.project "architectury-api"
-            } else if (loader.equals("forge") || loader.equals("neoforge")) {
-                required.project "architectury-api"
-            }
-        }
-        failSilently = true
-    }
-
-
-
-    curseforge {
-        apiKey = credentials.getProperty("curseToken")
-
-        project {
-            id = "1124962"
-
-            releaseType = "release"
-
-            addGameVersion(rootProject.minecraft_version)
-            addGameVersion((loader == "neoforge") ? "NeoForge" : loader.capitalize()) // Fuck me...
-
-            mainArtifact(remapJar) {
-                displayName = archives_name + " " + mod_version
-                changelog = file("CHANGELOG.md").toString()
-                changelogType = "markdown"
-
-                relations {
-                    if (loader.equals("fabric")) {
-                        requiredDependency "fabric-api"
-                        requiredDependency "modmenu"
-                        requiredDependency "architectury-api"
-                    } else if (loader.equals("forge") || loader.equals("neoforge")) {
-                        requiredDependency "architectury-api"
-                    }
+    if (loader != "common") {
+        modrinth {
+            token = credentials.getProperty("modrinthToken")
+            projectId = "ipla"
+            versionName = archives_name + " " + mod_version
+            versionNumber = mod_version
+            versionType = "release"
+            uploadFile = (Integer.valueOf(index) < 18) ? remapJar : jar
+            gameVersions = [rootProject.minecraft_version]
+            loaders = [loader]
+            changelog = file("CHANGELOG.md").toString()
+            dependencies {
+                if (loader.equals("fabric")) {
+                    required.project "fabric-api"
+                    required.project "modmenu"
+                    required.project "architectury-api"
+                } else if (loader.equals("forge") || loader.equals("neoforge")) {
+                    required.project "architectury-api"
                 }
             }
+            failSilently = true
         }
 
-        options {
-            debug = false
+        // ==== Новый плагин CurseForgeGradle ====
+        tasks.register("publishCurseForge", net.darkhax.curseforgegradle.TaskPublishCurseForge) {
+            disableVersionDetection()
+
+            def token = credentials.getProperty("curseToken")
+            if (token == null || token.isEmpty()) {
+                logger.warn("WARNING: CurseForge token is missing!")
+            }
+            apiToken = token ?: ""
+
+            def uploadFile = (Integer.valueOf(index) < 18) ? tasks.named("remapJar") : tasks.named("jar")
+            def mainFile = upload("1124962", uploadFile)
+
+            mainFile.displayName = archives_name + " " + mod_version
+            mainFile.releaseType = "release"
+
+            mainFile.changelog = ""
+            mainFile.changelogType = "markdown"
+
+            def targetMcVersion = rootProject.minecraft_version
+            def targetLoader = (loader == "neoforge") ? "NeoForge" : loader.capitalize()
+
+            mainFile.addGameVersion(targetMcVersion)
+            mainFile.addModLoader(targetLoader)
+
+            // На версии 1.3.33 этот метод работает штатно
+            mainFile.addEnvironment("Client", "server")
+
+            if (loader.equals("fabric")) {
+                mainFile.addRequirement("fabric-api", "modmenu", "architectury-api")
+            } else if (loader.equals("forge") || loader.equals("neoforge")) {
+                mainFile.addRequirement("architectury-api")
+            }
         }
     }
 }
