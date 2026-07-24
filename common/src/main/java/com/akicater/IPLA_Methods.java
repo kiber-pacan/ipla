@@ -1,7 +1,6 @@
 package com.akicater;
 
 import com.akicater.blocks.LayingItemEntity;
-import com.akicater.client.EatingPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ItemParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
@@ -39,7 +38,7 @@ public class IPLA_Methods {
             vec32 = vec32.xRot(-player.getXRot() * (float) (Math.PI / 180.0));
             vec32 = vec32.yRot(-player.getYRot() * (float) (Math.PI / 180.0));
             vec32 = vec32.add(player.getX(), player.getEyeY(), player.getZ());
-            #if MC_VER >= V1_20_1 player.level() #else player.level #endif.addParticle(new ItemParticleOption(ParticleTypes.ITEM, stack), vec32.x, vec32.y, vec32.z, vec3.x, vec3.y + 0.05, vec3.z);
+            #if MC_VER >= V1_20_1 player.level() #else player.level #endif.addParticle(new ItemParticleOption(ParticleTypes.ITEM, stack #if MC_VER >= V26_1 .getItem() #endif), vec32.x, vec32.y, vec32.z, vec3.x, vec3.y + 0.05, vec3.z);
         }
     }
 

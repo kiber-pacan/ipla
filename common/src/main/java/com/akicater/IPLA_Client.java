@@ -1,7 +1,6 @@
 package com.akicater;
 
 import com.akicater.blocks.LayingItem;
-import com.akicater.client.EatingPlayer;
 import com.akicater.client.IPLA_Config;
 import com.akicater.network.ItemEatPayload;
 import com.akicater.network.ItemPlacePayload;
@@ -18,8 +17,10 @@ import dev.architectury.registry.client.keymappings.KeyMappingRegistry;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 #if MC_VER >= V1_21
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.component.DataComponents;
 #else
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.FriendlyByteBuf;
 import io.netty.buffer.Unpooled;
 #endif
@@ -31,7 +32,9 @@ import net.minecraft.resources.ResourceLocation;
 #endif
 
 
+
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -68,6 +71,8 @@ public class IPLA_Client {
         KeyMappingRegistry.register(PLACE_ITEM_KEY);
         KeyMappingRegistry.register(ROTATE_ITEM_KEY);
 
+
+        // ITEM PLACING
         ClientTickEvent.CLIENT_POST.register(client -> {
             if (PLACE_ITEM_KEY.consumeClick()) {
                 if (client.hitResult instanceof BlockHitResult) {
@@ -97,10 +102,9 @@ public class IPLA_Client {
             }
         });
 
+        // ITEM ROTATION
         ClientRawInputEvent.MOUSE_SCROLLED.register((Minecraft minecraft, #if MC_VER > V1_20_1 double x, #endif double y) -> {
             BlockHitResult hitResult = IPLA_Methods.getBlockHitResult(minecraft.hitResult);
-
-
             if (hitResult != null && ROTATE_ITEM_KEY.isDown()) {
                 if (minecraft.level != null && minecraft.level.getBlockState(hitResult.getBlockPos()).getBlock() instanceof LayingItem) {
                     float rotationDegrees = config.getRotationDegrees();
@@ -124,7 +128,7 @@ public class IPLA_Client {
                     NetworkManager.sendToServer(payload);
                     #endif
 
-                    if (#if MC_VER < V1_20_4 Platform.isForge() #else Platform.isForgeLike() #endif) {
+                    if (Platform. #if MC_VER < V1_20_4 isForge() #elif MC_VER >= V26_1 isNeoForge() #else isForgeLike() #endif) {
                         return EventResult.interruptFalse();
                     } else {
                         return EventResult.interruptTrue();
@@ -134,6 +138,7 @@ public class IPLA_Client {
             return EventResult.interruptDefault();
         });
 
+        // CONFIG LOADING
         ClientLifecycleEvent.CLIENT_STARTED.register((minecraft) -> {
             try {
                 config.loadConfig();
@@ -147,64 +152,46 @@ public class IPLA_Client {
             #if LOADER == FORGE LOGGER.info("IPLA loader mode: FORGE"); #endif
         });
 
-        ClientLifecycleEvent.CLIENT_STOPPING.register((minecraft) -> config.saveConfig());
-
-        ClientRawInputEvent.MOUSE_CLICKED_POST.register(
-                #if MC_VER <= V1_21_8
-                (Minecraft client, int button, int action, int mods)
-                #else
-                (client, buttonInfo, action)
-                #endif -> {
-            if (client.player == null) return EventResult.interruptFalse();
-            boolean emptyHand = client.player.getMainHandItem().isEmpty();
-
-            boolean rightButton = #if MC_VER <= V1_21_8 button #else buttonInfo.button() #endif == 1;
-            boolean hasHitResult = client.hitResult != null;
-
-            if (!rightButton || !hasHitResult || !emptyHand) {
-                return EventResult.interruptFalse();
-            }
-
-            Player player = client.player;
-            Level level = client.level;
-
-            BlockHitResult hitResult = IPLA_Methods.getBlockHitResult(client.hitResult);
-
-            if (action == 0 || hitResult == null) {
-                IPLA_Methods.clearEating(player);
-
-                #if MC_VER < V1_21
-                FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
-                buf.writeBoolean(false);
-
-                NetworkManager.sendToServer(IPLA.ITEM_EAT, buf);
-                #else
-
-                ItemEatPayload payload = new ItemEatPayload(false);
-
-                NetworkManager.sendToServer(payload);
-                #endif
-
-                ((EatingPlayer) player).ipla$setEating(false);
-
-                return EventResult.interruptFalse();
-            } else {
-                #if MC_VER < V1_21
-                FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
-                buf.writeBoolean(true);
-
-                NetworkManager.sendToServer(IPLA.ITEM_EAT, buf);
-                #else
-
-                ItemEatPayload payload = new ItemEatPayload(true);
-
-                NetworkManager.sendToServer(payload);
-                #endif
-
-                ((EatingPlayer) player).ipla$setEating(true);
-
-                return EventResult.interruptFalse();
-            }
+        ClientLifecycleEvent.CLIENT_STOPPING.register((minecraft) -> {
+            config.saveConfig();
         });
+
+        ClientRawInputEvent.MOUSE_CLICKED_POST.register(#if MC_VER <= V1_21_8 (Minecraft client, int button, int action, int mods) #else (client, buttonInfo, action) #endif -> {
+            if (!config.eatFood) return EventResult.interruptFalse();
+            if (client.player == null) return EventResult.interruptFalse();
+
+            boolean emptyHand = client.player.getMainHandItem().isEmpty();
+            boolean rightButton = #if MC_VER <= V1_21_8 button #else buttonInfo.button() #endif == 1;
+            Screen screen = client #if MC_VER >= V26_2 .gui.screen() #else .screen #endif ;
+
+            //client.player.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(client.player.getAbilities().getWalkingSpeed());
+
+            // Basic check
+            if (!rightButton || !emptyHand || screen != null) {
+                sendEatPayload(client.player, false);
+                return EventResult.interruptFalse();
+            }
+
+            sendEatPayload(client.player, action != 0);
+            //client.player.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(0.02D);
+
+
+            return EventResult.interruptFalse();
+        });
+    }
+
+    public static void sendEatPayload(Player player, boolean bool) {
+        #if MC_VER < V1_21
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        buf.writeBoolean(bool);
+
+        NetworkManager.sendToServer(IPLA.ITEM_EAT, buf);
+        #else
+        ItemEatPayload payload = new ItemEatPayload(bool);
+
+        NetworkManager.sendToServer(payload);
+        #endif
+
+        ((EatingPlayer) player).ipla$setEating(bool);
     }
 }

@@ -25,7 +25,7 @@ import net.minecraft.network.chat.TextComponent;
 #endif
 
 public class IPLA_Config {
-    public boolean oldRendering;
+
 
     // Rotation
     public int rotationPower;
@@ -40,6 +40,10 @@ public class IPLA_Config {
     public float itemScale;
     public float blockScale;
 
+    // Functions
+    public boolean eatFood;
+    public boolean oldRendering;
+
     public IPLA_Config(){}
 
     public void loadConfig() throws IOException {
@@ -53,25 +57,24 @@ public class IPLA_Config {
 
             fileConfig.load();
 
-            Optional<Boolean> oldRendering = fileConfig.getOptional("oldRendering");
 
+            // Rotation
             Optional<Integer> rotPower = fileConfig.getOptional("rotPower");
 
+            // Size
             Optional<Float> absSize = fileConfig.getOptional("absSize");
             Optional<Float> iSize = fileConfig.getOptional("iSize");
             Optional<Float> bSize = fileConfig.getOptional("bSize");
 
+            // Resize
             Optional<Float> itemScale = fileConfig.getOptional("itemScale");
             Optional<Float> blockScale = fileConfig.getOptional("bSize");
 
-            boolean broken = false;
+            // Functions
+            Optional<Boolean> oldRendering = fileConfig.getOptional("oldRendering");
+            Optional<Boolean> eatFood = fileConfig.getOptional("eatFood");
 
-            try {
-                this.oldRendering = oldRendering.orElse(false);
-            } catch (Exception e) {
-                this.oldRendering = false;
-                broken = true;
-            }
+            boolean broken = false;
 
             try {
                 this.absoluteSize = absSize.orElse(1.0f);
@@ -115,8 +118,17 @@ public class IPLA_Config {
                 broken = true;
             }
 
+            try {
+                this.eatFood = eatFood.orElse(false);
+            } catch (Exception e) {
+                this.eatFood = false;
+                broken = true;
+            }
 
-            if (broken) saveConfig();
+            if (broken) {
+                defaultBaseConfig();
+                saveConfig();
+            }
 
         } else {
             defaultBaseConfig();
@@ -125,7 +137,7 @@ public class IPLA_Config {
     }
 
     public void defaultBaseConfig() {
-        this.oldRendering = false;
+
         this.rotationPower = 1;
 
         this.absoluteSize = 1.0f;
@@ -138,18 +150,26 @@ public class IPLA_Config {
         this.itemScale = 2.0f;
     }
 
+    public void defaultFunctionsConfig() {
+        this.oldRendering = false;
+        this.eatFood = true;
+    }
+
     public void saveConfig() {
         Path c = Platform.getConfigFolder().resolve("ipla_config.toml");
 
         try (BufferedWriter writer = Files.newBufferedWriter(c)) {
             writer.write("# IPLA config\n");
-            writer.write("oldRendering = " + oldRendering + "\n");
             writer.write("absSize = " + absoluteSize + "\n");
             writer.write("iSize = " + itemSize + "\n");
             writer.write("bSize = " + blockSize + "\n");
+
             writer.write("rotPower = " + rotationPower + "\n");
             writer.write("blockScale = " + blockScale + "\n");
             writer.write("itemScale = " + itemScale + "\n");
+
+            writer.write("oldRendering = " + oldRendering + "\n");
+            writer.write("eatFood = " + eatFood + "\n");
         } catch (IOException e) {
             e.printStackTrace();
         }
