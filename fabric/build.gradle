@@ -41,17 +41,18 @@ repositories {
         url = "https://api.modrinth.com/maven"
     }
 }
+int version_index = Integer.valueOf(rootProject.index)
 
 dependencies {
-    def impl_type = (Integer.valueOf(index) < 18) ? "modImplementation" : "implementation"
+    def impl_type = (version_index < 18) ? "modImplementation" : "implementation"
 
     add impl_type, "net.fabricmc:fabric-loader:$rootProject.fabric_loader_version"
     add impl_type, "net.fabricmc.fabric-api:fabric-api:$rootProject.fabric_api_version"
     add impl_type, "dev.architectury:architectury-fabric:$rootProject.architectury_api_version"
     add impl_type, "com.terraformersmc:modmenu:${rootProject.modmenu_version}"
-    add impl_type, "maven.modrinth:jade:${rootProject.jade_version}+fabric"
+    add impl_type, "maven.modrinth:jade:${(rootProject.hasProperty("jade_version_fabric")) ? rootProject.jade_version_fabric : rootProject.jade_version}${((version_index < 5 || version_index == 6)) ? "" : "+fabric"}"
 
-    if (Integer.valueOf(index) < 18)
+    if (version_index < 18)
         common(project(path: ':common', configuration: 'namedElements')) { transitive false }
     else
         common(project(path: ':common')) { transitive false }
@@ -79,7 +80,7 @@ shadowJar {
     archiveClassifier = 'dev-shadow'
 }
 
-if (Integer.valueOf(index) < 18) {
+if (version_index < 18) {
     remapJar {
         inputFile.set shadowJar.archiveFile
     }

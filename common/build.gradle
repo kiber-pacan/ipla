@@ -11,12 +11,15 @@ repositories {
     }
 }
 
+int version_index = Integer.valueOf(rootProject.index)
+
 dependencies {
-    def impl_type = (Integer.valueOf(index) < 18) ? "modImplementation" : "implementation"
+    println("INDEX ${rootProject.index}")
+    def impl_type = (version_index < 18) ? "modImplementation" : "implementation"
 
     add impl_type, "net.fabricmc:fabric-loader:$rootProject.fabric_loader_version"
     add impl_type, "dev.architectury:architectury:$rootProject.architectury_api_version"
-    add impl_type, "maven.modrinth:jade:${rootProject.jade_version}+fabric"
+    add impl_type, "maven.modrinth:jade:${(rootProject.hasProperty("jade_version_fabric")) ? rootProject.jade_version_fabric : rootProject.jade_version}${((version_index < 5 || version_index == 6)) ? "" : "+fabric"}"
 
 
     implementation "com.electronwill.night-config:core:3.6.6"

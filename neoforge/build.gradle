@@ -40,15 +40,17 @@ repositories {
     }
 }
 
+int version_index = Integer.valueOf(rootProject.index)
+
 dependencies {
     neoForge "net.neoforged:neoforge:${rootProject.neoforge_version}"
 
-    def impl_type = (Integer.valueOf(index) < 18) ? "modImplementation" : "implementation"
+    def impl_type = (version_index < 18) ? "modImplementation" : "implementation"
 
     add impl_type, "dev.architectury:architectury-neoforge:${rootProject.architectury_api_version}"
-    add impl_type, "maven.modrinth:jade:${(Integer.valueOf(index) == 21) ? "26.2.8" : rootProject.jade_version}+neoforge"
+    add impl_type, "maven.modrinth:jade:${(rootProject.hasProperty("jade_version_neoforge")) ? rootProject.jade_version_neoforge : rootProject.jade_version}${(version_index < 5 || version_index == 6) ? "" : "+neoforge"}"
 
-    if (Integer.valueOf(index) < 18)
+    if (version_index < 18)
         common(project(path: ':common', configuration: 'namedElements')) { transitive false }
     else
         common(project(path: ':common')) { transitive false }
@@ -70,7 +72,7 @@ shadowJar {
     archiveClassifier = 'dev-shadow'
 }
 
-if (Integer.valueOf(index) < 18) {
+if (version_index < 18) {
     remapJar {
         inputFile.set shadowJar.archiveFile
     }
