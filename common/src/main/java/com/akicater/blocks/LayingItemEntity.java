@@ -47,6 +47,8 @@ public class LayingItemEntity extends BlockEntity {
     // Quad mode for sides
     public NonNullList<Boolean> quad;
 
+    public VoxelShape cachedShape;
+    public boolean dirtyShape;
 
     public LayingItemEntity(BlockPos pos, BlockState blockState) {
         super(IPLA.lItemBlockEntity.get(), pos, blockState);
@@ -57,6 +59,7 @@ public class LayingItemEntity extends BlockEntity {
         lastRot = NonNullList.withSize(24, 0.0f);
 
         quad = NonNullList.withSize(6, false);
+        dirtyShape = false;
     }
 
 
@@ -73,6 +76,8 @@ public class LayingItemEntity extends BlockEntity {
         for (int i = 0; i < 24; i++) {
             rot.set(i, compoundTag #if MC_VER <= V1_21_5 .getFloat #else .getFloatOr #endif("r" + i #if MC_VER >= V1_21_6, 1.0f #endif) #if MC_VER == V1_21_5 .get() #endif);
         }
+
+        dirtyShape = compoundTag #if MC_VER <= V1_21_5 .getBoolean #else .getBooleanOr #endif("d" #if MC_VER >= V1_21_6, true #endif) #if MC_VER == V1_21_5 .get() #endif;
     }
 
     // Save nbt data
@@ -88,6 +93,8 @@ public class LayingItemEntity extends BlockEntity {
         for (int i = 0; i < 24; i++) {
             compoundTag.putFloat("r" + i, rot.get(i));
         }
+
+        compoundTag.putBoolean("d", dirtyShape);
 
         #if MC_VER < V1_18_2
         return compoundTag;
@@ -110,6 +117,7 @@ public class LayingItemEntity extends BlockEntity {
         return this.saveCustomOnly(registries);
     }
     #else
+
     public @NotNull CompoundTag getUpdateTag(#if MC_VER >= V1_21 HolderLookup.Provider provider #endif) {
         CompoundTag compoundTag = #if MC_VER < V1_18_2 this.save(new CompoundTag()) #elif MC_VER >= V1_21 this.saveCustomOnly(provider) #else this.saveWithoutMetadata() #endif;
 
@@ -225,28 +233,33 @@ public class LayingItemEntity extends BlockEntity {
     );
 
     public void setItem(int index, ItemStack stack) {
+        dirtyShape = true;
         inv.set(index, stack.split(1));
     }
 
     //#if MC_VER >= V1_21
+
     public VoxelShape getShape() {
-        List<VoxelShape> tempShape = new ArrayList<>();
+        if (!dirtyShape && cachedShape != null) return cachedShape;
+        if (isEmpty()) return cachedShape = Shapes.box(0.25, 0.25, 0.25, 0.75, 0.75, 0.75);
+        VoxelShape shape = Shapes.empty();
 
         for (int i = 0; i < 6; i++) {
-            if (!isSlotEmpty(i)) {
-                if (!quad.get(i)) {
-                    if (isCuboid(i, 0)) tempShape.add(basicShapesBlock.get(i)); else tempShape.add(basicShapesItem.get(i));
-                } else {
-                    if (!isSubSlotEmpty(i, 0)) if (isCuboid(i, 0)) tempShape.add(basicQuadShapesBlock.get(i * 4)); else tempShape.add(basicQuadShapesItem.get(i * 4));
-                    if (!isSubSlotEmpty(i, 1)) if (isCuboid(i, 1)) tempShape.add(basicQuadShapesBlock.get(i * 4 + 1)); else tempShape.add(basicQuadShapesItem.get(i * 4 + 1));
-                    if (!isSubSlotEmpty(i, 2)) if (isCuboid(i, 2)) tempShape.add(basicQuadShapesBlock.get(i * 4 + 2)); else tempShape.add(basicQuadShapesItem.get(i * 4 + 2));
-                    if (!isSubSlotEmpty(i, 3)) if (isCuboid(i, 3)) tempShape.add(basicQuadShapesBlock.get(i * 4 + 3)); else tempShape.add(basicQuadShapesItem.get(i * 4 + 3));
+            if (isSlotEmpty(i)) continue;
+            boolean isQuad = quad.get(i);
+
+            if (!isQuad) {
+                shape = Shapes.join(shape, (isCuboid(i, 0)) ? basicShapesBlock.get(i) : basicShapesItem.get(i), BooleanOp.OR);
+            } else {
+                for (int i1 = 0; i1 < 4; i1++) {
+                    if (isSubSlotEmpty(i, i1)) continue;
+                    shape = Shapes.join(shape, (isCuboid(i, i1)) ? basicQuadShapesBlock.get(i * 4 + i1) : basicQuadShapesItem.get(i * 4 + i1), BooleanOp.OR);
                 }
             }
         }
 
-        Optional<VoxelShape> shape = tempShape.stream().reduce((v1, v2) -> Shapes.join(v1, v2, BooleanOp.OR));
-        return shape.orElseGet(() -> Shapes.box(0, 0, 0, 1, 0.1, 1));
+        dirtyShape = false;
+        return cachedShape = shape;
     }
     //#endif
 
