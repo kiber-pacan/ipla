@@ -182,7 +182,6 @@ subprojects {
             failSilently = true
         }
 
-        // ==== Новый плагин CurseForgeGradle ====
         tasks.register("publishCurseForge", net.darkhax.curseforgegradle.TaskPublishCurseForge) {
             disableVersionDetection()
 
@@ -207,7 +206,6 @@ subprojects {
             mainFile.addGameVersion(targetMcVersion)
             mainFile.addModLoader(targetLoader)
 
-            // На версии 1.3.33 этот метод работает штатно
             mainFile.addEnvironment("Client", "server")
 
             if (loader.equals("fabric")) {

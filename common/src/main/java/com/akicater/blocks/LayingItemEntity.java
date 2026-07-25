@@ -1,6 +1,7 @@
 package com.akicater.blocks;
 
 import com.akicater.IPLA;
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.NonNullList;
 #if MC_VER >= V1_21
@@ -49,6 +50,7 @@ public class LayingItemEntity extends BlockEntity {
 
     public VoxelShape cachedShape;
     public boolean dirtyShape;
+    public boolean dirtyShapeNBT;
 
     public LayingItemEntity(BlockPos pos, BlockState blockState) {
         super(IPLA.lItemBlockEntity.get(), pos, blockState);
@@ -59,7 +61,7 @@ public class LayingItemEntity extends BlockEntity {
         lastRot = NonNullList.withSize(24, 0.0f);
 
         quad = NonNullList.withSize(6, false);
-        dirtyShape = false;
+        dirtyShape = true;
     }
 
 
@@ -94,7 +96,8 @@ public class LayingItemEntity extends BlockEntity {
             compoundTag.putFloat("r" + i, rot.get(i));
         }
 
-        compoundTag.putBoolean("d", dirtyShape);
+        compoundTag.putBoolean("d", dirtyShapeNBT);
+        dirtyShapeNBT = false;
 
         #if MC_VER < V1_18_2
         return compoundTag;
@@ -233,13 +236,13 @@ public class LayingItemEntity extends BlockEntity {
     );
 
     public void setItem(int index, ItemStack stack) {
-        dirtyShape = true;
         inv.set(index, stack.split(1));
     }
 
     //#if MC_VER >= V1_21
 
     public VoxelShape getShape() {
+        //if (dirtyShape && Minecraft.getInstance().player != null) System.out.println(dirtyShape);
         if (!dirtyShape && cachedShape != null) return cachedShape;
         if (isEmpty()) return cachedShape = Shapes.box(0.25, 0.25, 0.25, 0.75, 0.75, 0.75);
         VoxelShape shape = Shapes.empty();
@@ -294,6 +297,8 @@ public class LayingItemEntity extends BlockEntity {
 
     // Mark dirty so client get synced with server
     public void markDirty() {
+        dirtyShape = true;
+        dirtyShapeNBT = true;
         this.setChanged();
         this.getLevel().sendBlockUpdated(this.getBlockPos(), this.getBlockState(), this.getBlockState(), 3);
     }

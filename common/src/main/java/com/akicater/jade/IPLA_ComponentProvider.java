@@ -42,6 +42,7 @@ public class IPLA_ComponentProvider implements IBlockComponentProvider {
 
 
         tooltip.add(Component.nullToEmpty(""));
+
         for (int i = 0; i < 6; i++) {
             for (int i1 = 0; i1 < 4; i1++) {
                 ItemStack stack = entity.inv.get(i * 4 + i1);
