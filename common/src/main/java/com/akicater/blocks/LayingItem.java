@@ -120,12 +120,11 @@ public class LayingItem extends BaseEntityBlock implements SimpleWaterloggedBloc
     @Override
     #if MC_VER >= V1_21 protected @NotNull VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) #else public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context)  #endif {
         LayingItemEntity entity = (LayingItemEntity) level.getBlockEntity(pos);
-
         if (entity != null) {
             return entity.getShape();
+        } else {
+            return super.getShape(state, level, pos, context);
         }
-
-        return super.getShape(state, level, pos, context);
     }
 
     // Drop items on break
@@ -182,7 +181,7 @@ public class LayingItem extends BaseEntityBlock implements SimpleWaterloggedBloc
                 }
 
                 if (success && itemStack.isEmpty()) {
-                    entity.inv.set(index, ItemStack.EMPTY);
+                    entity.setItem(index, ItemStack.EMPTY);
                     entity.markDirty(player);
                     level.playSound(null, pos.getX(), pos.getY(), pos.getZ(), #if MC_VER >= V1_18_2 SoundEvents.BUNDLE_REMOVE_ONE #else SoundEvents.DISPENSER_FAIL #endif , SoundSource.BLOCKS, 1, 1.4f);
 
