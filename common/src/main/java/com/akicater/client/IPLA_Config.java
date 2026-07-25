@@ -1,5 +1,6 @@
 package com.akicater.client;
 
+import com.akicater.IPLA;
 import com.electronwill.nightconfig.core.file.CommentedFileConfig;
 import dev.architectury.platform.Platform;
 
@@ -68,7 +69,7 @@ public class IPLA_Config {
 
             // Resize
             Optional<Float> itemScale = fileConfig.getOptional("itemScale");
-            Optional<Float> blockScale = fileConfig.getOptional("bSize");
+            Optional<Float> blockScale = fileConfig.getOptional("blockScale");
 
             // Functions
             Optional<Boolean> oldRendering = fileConfig.getOptional("oldRendering");
@@ -112,7 +113,7 @@ public class IPLA_Config {
             }
 
             try {
-                this.itemScale = blockScale.orElse(2.0f);
+                this.itemScale = itemScale.orElse(2.0f);
             } catch (Exception e) {
                 this.itemScale = 2.0f;
                 broken = true;
@@ -156,22 +157,29 @@ public class IPLA_Config {
     }
 
     public void saveConfig() {
-        Path c = Platform.getConfigFolder().resolve("ipla_config.toml");
+        Path folder = Platform.getConfigFolder();
+        Path c = folder.resolve("ipla_config.toml");
 
-        try (BufferedWriter writer = Files.newBufferedWriter(c)) {
-            writer.write("# IPLA config\n");
-            writer.write("absSize = " + absoluteSize + "\n");
-            writer.write("iSize = " + itemSize + "\n");
-            writer.write("bSize = " + blockSize + "\n");
+        try {
+            if (!Files.exists(folder)) {
+                Files.createDirectories(folder);
+            }
 
-            writer.write("rotPower = " + rotationPower + "\n");
-            writer.write("blockScale = " + blockScale + "\n");
-            writer.write("itemScale = " + itemScale + "\n");
+            try (BufferedWriter writer = Files.newBufferedWriter(c)) {
+                writer.write("# IPLA config\n");
+                writer.write("absSize = " + absoluteSize + "\n");
+                writer.write("iSize = " + itemSize + "\n");
+                writer.write("bSize = " + blockSize + "\n");
 
-            writer.write("oldRendering = " + oldRendering + "\n");
-            writer.write("eatFood = " + eatFood + "\n");
+                writer.write("rotPower = " + rotationPower + "\n");
+                writer.write("blockScale = " + blockScale + "\n");
+                writer.write("itemScale = " + itemScale + "\n");
+
+                writer.write("oldRendering = " + oldRendering + "\n");
+                writer.write("eatFood = " + eatFood + "\n");
+            }
         } catch (IOException e) {
-            e.printStackTrace();
+            IPLA.LOGGER.info("IPLA: failed to save config to " + c.toAbsolutePath());
         }
     }
 

@@ -22,5 +22,6 @@
 
   "block.ipla.l_item" : "Лежащий предмет",
 
-  "key.category.ipla.ipla" : "Ipla"
+  "key.category.ipla.ipla" : "Ipla",
+  "config.jade.plugin_ipla.ipla_jade" : "Плагин ipla для jade"
 }
