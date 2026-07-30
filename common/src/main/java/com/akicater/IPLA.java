@@ -2,18 +2,57 @@ package com.akicater;
 
 import com.akicater.blocks.LayingItem;
 import com.akicater.blocks.LayingItemEntity;
-
 import com.akicater.network.ItemEatPayload;
 import com.akicater.network.ItemPlacePayload;
 import com.akicater.network.ItemRotatePayload;
 import com.google.common.base.Suppliers;
+import dev.architectury.event.events.common.LifecycleEvent;
 import dev.architectury.event.events.common.TickEvent;
 import dev.architectury.networking.NetworkManager;
 import dev.architectury.registry.registries.Registrar;
 import dev.architectury.registry.registries.RegistrySupplier;
 import net.minecraft.core.BlockPos;
-#if MC_VER >= V1_21_11
+#if MC_VER >= V1_19_4
+import net.minecraft.core.registries.BuiltInRegistries;
+#else
 import net.minecraft.core.Registry;
+#endif
+
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.EmptyBlockGetter;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import java.util.*;
+import java.util.function.Supplier;
+import java.util.logging.Logger;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.shapes.VoxelShape;
+
+
+#if MC_VER >= V1_19_4
+import dev.architectury.registry.registries.RegistrarManager;
+import net.minecraft.core.registries.Registries;
+#else
+import dev.architectury.registry.registries.Registries;
+#endif
+
+#if MC_VER < V1_20_1
+import net.minecraft.world.level.material.Material;
+#else
+
+
+#if MC_VER >= V1_21_11
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.Identifier;
 #else
@@ -23,66 +62,33 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceLocation;
 #endif
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.food.FoodProperties;
+import net.minecraft.world.item.CreativeModeTab;
+#endif
+
+#if MC_VER >= V1_21_11
+import net.minecraft.resources.Identifier;
+#else
+import net.minecraft.resources.ResourceLocation;
+#endif
 
 #if MC_VER >= V1_21_3
 import net.minecraft.resources.ResourceKey;
 #endif
 
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
-#if MC_VER >= V1_20_1
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.food.FoodProperties;
-import net.minecraft.world.item.CreativeModeTab;
-#endif
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.ClipContext;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.entity.BlockEntityType;
-import net.minecraft.world.level.block.state.BlockBehaviour;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.Vec3;
-
-import java.util.List;
-import java.util.Random;
-import java.util.function.Supplier;
-import java.util.logging.Logger;
-
-
-#if MC_VER >= V1_21
-#endif
-
-#if MC_VER >= V1_19_4
-import dev.architectury.registry.registries.RegistrarManager;
-import net.minecraft.core.registries.Registries;
-#endif
-
-#if MC_VER <= V1_19_2
-import dev.architectury.registry.registries.Registries;
-#endif
-
-#if MC_VER < V1_20_1
-import net.minecraft.world.level.material.Material;
-#endif
-
-
 public final class IPLA {
     public static final String MOD_ID = "ipla";
     public static final Logger LOGGER = Logger.getLogger(MOD_ID);
 
-
     #if MC_VER >= V1_19_4
-        public static final Supplier<RegistrarManager> MANAGER = Suppliers.memoize(() -> RegistrarManager.get(MOD_ID));
-        public static final Registrar<Block> blocks = MANAGER.get().get(Registries.BLOCK);
-        public static final Registrar<Item> items = MANAGER.get().get(Registries.ITEM);
-        public static final Registrar<BlockEntityType<?>> blockEntities = MANAGER.get().get(Registries.BLOCK_ENTITY_TYPE);
-        #if MC_VER >= V1_20_1
-        public static final Registrar<CreativeModeTab> itemGroups = MANAGER.get().get(Registries.CREATIVE_MODE_TAB);
-        #endif
+    public static final Supplier<RegistrarManager> MANAGER = Suppliers.memoize(() -> RegistrarManager.get(MOD_ID));
+    public static final Registrar<Block> blocks = MANAGER.get().get(Registries.BLOCK);
+    public static final Registrar<Item> items = MANAGER.get().get(Registries.ITEM);
+    public static final Registrar<BlockEntityType<?>> blockEntities = MANAGER.get().get(Registries.BLOCK_ENTITY_TYPE);
+    #if MC_VER >= V1_20_1
+    public static final Registrar<CreativeModeTab> itemGroups = MANAGER.get().get(Registries.CREATIVE_MODE_TAB);
+    #endif
     #else
     public static final Supplier<Registries> MANAGER = Suppliers.memoize(() -> Registries.get(MOD_ID));
     public static final Registrar<Block> blocks = MANAGER.get().get(Registry.BLOCK_REGISTRY);
@@ -94,20 +100,20 @@ public final class IPLA {
 
     public static RegistrySupplier<BlockEntityType<LayingItemEntity>> lItemBlockEntity;
 
-
     public static final Random RANDOM = new Random();
 
     public static #if MC_VER >= V1_21_11 Identifier #else ResourceLocation #endif ITEM_PLACE;
     public static #if MC_VER >= V1_21_11 Identifier #else ResourceLocation #endif ITEM_ROTATE;
     public static #if MC_VER >= V1_21_11 Identifier #else ResourceLocation #endif ITEM_EAT;
 
+    public static Map<Block, Integer> shapeTypeCache = new HashMap<>();
 
     public static void initializeServer() {
         #if MC_VER >= V1_21_3 ResourceKey<Block> key = ResourceKey.create(Registries.BLOCK, #if MC_VER >= V1_21 #if MC_VER >= V1_21_11 Identifier #else ResourceLocation #endif.fromNamespaceAndPath #else new ResourceLocation #endif(IPLA.MOD_ID, "l_item")); #endif
 
         lItemBlock = blocks.register(
                 #if MC_VER >= V1_21 #if MC_VER >= V1_21_11 Identifier #else ResourceLocation #endif .fromNamespaceAndPath #else new ResourceLocation #endif(MOD_ID, "l_item"),
-                () -> new LayingItem(BlockBehaviour.Properties.of(#if MC_VER < V1_20_1 Material.AIR #endif)
+                () -> new LayingItem(BlockBehaviour.Properties.of(#if MC_VER < V1_20_1 Material.SAND #endif)
                         .instabreak()
                         .dynamicShape()
                         .noOcclusion()
@@ -232,7 +238,7 @@ public final class IPLA {
 
                     ItemStack foodStack = ItemStack.EMPTY;
 
-                    List<Integer> hits = IPLA_Methods.getPreciseIndexFromHit(entity, hitResult, true);
+                    List<Integer> hits = IPLA_Methods.getPreciseIndexFromHit(entity, hitResult);
                     Integer hit = null;
 
                     // Get first food item
@@ -265,6 +271,49 @@ public final class IPLA {
                 } else {
                     //player.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(player.getAbilities().getWalkingSpeed());
                     IPLA_Methods.clearEating(player);
+                }
+            }
+        });
+
+        LifecycleEvent.SETUP.register(() -> {
+            for (Block block : #if MC_VER >= V1_19_4 BuiltInRegistries.BLOCK #else Registry.BLOCK #endif) {
+                BlockState state = block.defaultBlockState();
+                VoxelShape shape = state.getShape(EmptyBlockGetter.INSTANCE, BlockPos.ZERO);
+                if (shape.isEmpty() || IPLA_Methods.isItemLike(block)) {
+                    shapeTypeCache.put(block, -1);
+                    continue;
+                }
+
+                AABB bounds = shape.bounds();
+
+                double minX = bounds.minX;
+                double maxX = bounds.maxX;
+                double minY = bounds.minY;
+                double maxY = bounds.maxY;
+                double minZ = bounds.minZ;
+                double maxZ = bounds.maxZ;
+
+                double a = maxX - minX;
+                double h = maxY - minY;
+                double b = maxZ - minZ;
+
+                double[] sorted = {a, b, h};
+                Arrays.sort(sorted);
+
+                double min = sorted[0];
+                double mid = sorted[1];
+                double max = sorted[2];
+
+                double threshold = 2.0;
+
+                if (a == b && h == 0.5) {
+                    shapeTypeCache.put(block, 3);
+                } else if (max / mid >= threshold) {
+                    shapeTypeCache.put(block, 0);
+                } else if (mid / min >= threshold) {
+                    shapeTypeCache.put(block, 1);
+                } else {
+                    shapeTypeCache.put(block, 2);
                 }
             }
         });
