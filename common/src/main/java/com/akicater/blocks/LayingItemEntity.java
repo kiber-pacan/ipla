@@ -1,7 +1,8 @@
 package com.akicater.blocks;
 
 import com.akicater.IPLA;
-import net.minecraft.client.Minecraft;
+import com.akicater.IPLA_Methods;
+import com.akicater.IPLA_Shapes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.NonNullList;
 #if MC_VER >= V1_21
@@ -12,6 +13,7 @@ import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.world.ContainerHelper;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -27,10 +29,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-import java.util.logging.Logger;
 
 #if MC_VER >= V1_21_5
 import net.minecraft.world.Containers;
@@ -130,12 +129,9 @@ public class LayingItemEntity extends BlockEntity {
     }
     #endif
 
-    public boolean isCuboid(int slot, int subSlot) {
-        return this.inv.get(slot * 4 + subSlot).getItem() instanceof BlockItem && ((BlockItem) this.inv.get(slot * 4 + subSlot).getItem()).getBlock().defaultBlockState().isCollisionShapeFullBlock(this.getLevel(), this.getBlockPos());
-    }
-
     public boolean isCuboid(int slot) {
-        return this.inv.get(slot).getItem() instanceof BlockItem && ((BlockItem) this.inv.get(slot).getItem()).getBlock().defaultBlockState().isCollisionShapeFullBlock(this.getLevel(), this.getBlockPos());
+        Item item = this.inv.get(slot).getItem();
+        return IPLA_Methods.isCuboid(this.inv.get(slot).getItem());
     }
 
     public static List<VoxelShape> basicShapesItem = List.of(
@@ -194,7 +190,7 @@ public class LayingItemEntity extends BlockEntity {
             Shapes.box(0.0, 1.0 / 2, 0, 1.0 / 16, 1.0, 1.0 / 2)
     );
 
-    public static List<VoxelShape> basicQuadShapesBlock = List.of(
+    public static List<VoxelShape> basicQuadShapesBlockOld = List.of(
             // TOP
             Shapes.box(1.0 / 16 * 2, 1.0 - 1.0 / 16 * 4, 1.0 / 16 * 2, 1.0 / 16 * 6, 1.0, 1.0 / 16 * 6),
             Shapes.box(1.0 / 2 + 1.0 / 16 * 2, 1.0 - 1.0 / 16 * 4, 1.0 / 16 * 2, 1.0 / 2 + 1.0 / 16 * 6, 1.0, 1.0 / 16 * 6),
@@ -235,6 +231,38 @@ public class LayingItemEntity extends BlockEntity {
 
     );
 
+    public static List<VoxelShape> basicQuadShapesBlock = List.of(
+            Shapes.box(0.0, 0.5, 0.0, 0.5, 1.0, 0.5),
+            Shapes.box(0.5, 0.5, 0.0, 1.0, 1.0, 0.5),
+            Shapes.box(0.0, 0.5, 0.5, 0.5, 1.0, 1.0),
+            Shapes.box(0.5, 0.5, 0.5, 1.0, 1.0, 1.0),
+
+            Shapes.box(0.0, 0.0, 0.5, 0.5, 0.5, 1.0),
+            Shapes.box(0.5, 0.0, 0.5, 1.0, 0.5, 1.0),
+            Shapes.box(0.0, 0.0, 0.0, 0.5, 0.5, 0.5),
+            Shapes.box(0.5, 0.0, 0.0, 1.0, 0.5, 0.5),
+
+            Shapes.box(0.5, 0.0, 0.5, 1.0, 0.5, 1.0),
+            Shapes.box(0.0, 0.0, 0.5, 0.5, 0.5, 1.0),
+            Shapes.box(0.5, 0.5, 0.5, 1.0, 1.0, 1.0),
+            Shapes.box(0.0, 0.5, 0.5, 0.5, 1.0, 1.0),
+
+            Shapes.box(0.0, 0.0, 0.0, 0.5, 0.5, 0.5),
+            Shapes.box(0.5, 0.0, 0.0, 1.0, 0.5, 0.5),
+            Shapes.box(0.0, 0.5, 0.0, 0.5, 1.0, 0.5),
+            Shapes.box(0.5, 0.5, 0.0, 1.0, 1.0, 0.5),
+
+            Shapes.box(0.5, 0.0, 0.0, 1.0, 0.5, 0.5),
+            Shapes.box(0.5, 0.0, 0.5, 1.0, 0.5, 1.0),
+            Shapes.box(0.5, 0.5, 0.0, 1.0, 1.0, 0.5),
+            Shapes.box(0.5, 0.5, 0.5, 1.0, 1.0, 1.0),
+
+            Shapes.box(0.0, 0.0, 0.5, 0.5, 0.5, 1.0),
+            Shapes.box(0.0, 0.0, 0.0, 0.5, 0.5, 0.5),
+            Shapes.box(0.0, 0.5, 0.5, 0.5, 1.0, 1.0),
+            Shapes.box(0.0, 0.5, 0.0, 0.5, 1.0, 0.5)
+    );
+
     public void setItem(int index, ItemStack stack) {
         inv.set(index, stack.split(1));
     }
@@ -242,7 +270,6 @@ public class LayingItemEntity extends BlockEntity {
     //#if MC_VER >= V1_21
 
     public VoxelShape getShape() {
-        //if (dirtyShape && Minecraft.getInstance().player != null) System.out.println(dirtyShape);
         if (!dirtyShape && cachedShape != null) return cachedShape;
         if (isEmpty()) return cachedShape = Shapes.box(0.25, 0.25, 0.25, 0.75, 0.75, 0.75);
         VoxelShape shape = Shapes.empty();
@@ -252,11 +279,14 @@ public class LayingItemEntity extends BlockEntity {
             boolean isQuad = quad.get(i);
 
             if (!isQuad) {
-                shape = Shapes.join(shape, (isCuboid(i, 0)) ? basicShapesBlock.get(i) : basicShapesItem.get(i), BooleanOp.OR);
+                //shape = Shapes.join(shape, (isCuboid(i * 4)) ? basicShapesBlock.get(i) : basicShapesItem.get(i), BooleanOp.OR);
+
+                shape = Shapes.join(shape, IPLA_Shapes.get_shape(i * 4, inv.get(i * 4).getItem(), false), BooleanOp.OR);
             } else {
                 for (int i1 = 0; i1 < 4; i1++) {
                     if (isSubSlotEmpty(i, i1)) continue;
-                    shape = Shapes.join(shape, (isCuboid(i, i1)) ? basicQuadShapesBlock.get(i * 4 + i1) : basicQuadShapesItem.get(i * 4 + i1), BooleanOp.OR);
+                    shape = Shapes.join(shape, IPLA_Shapes.get_shape(i * 4 + i1, inv.get(i * 4 + i1).getItem(), true), BooleanOp.OR);
+                    //shape = Shapes.join(shape, (isCuboid(i * 4 + i1)) ? basicQuadShapesBlock.get(i * 4 + i1) : basicQuadShapesItem.get(i * 4 + i1), BooleanOp.OR);
                 }
             }
         }
