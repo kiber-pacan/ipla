@@ -162,7 +162,7 @@ public class LayingItem extends BaseEntityBlock implements SimpleWaterloggedBloc
         LayingItemEntity entity = (LayingItemEntity) level#if MC_VER < V1_21 .getChunk(pos) #endif.getBlockEntity(pos);
 
         if (entity != null) {
-            List<Integer> indices = IPLA_Methods.getPreciseIndexFromHit(entity, hit, false);
+            List<Integer> indices = IPLA_Methods.getPreciseIndexFromHit(entity, hit);
 
             for (int index : indices) {
                 if (entity.inv.get(index).isEmpty()) return InteractionResult.FAIL;
@@ -171,7 +171,7 @@ public class LayingItem extends BaseEntityBlock implements SimpleWaterloggedBloc
 
                 ItemStack itemStack = entity.inv.get(index).copy();
 
-                boolean food = #if MC_VER >= V1_21 ((FoodProperties) itemStack.get(DataComponents.FOOD)) != null; #else itemStack.getItem().isEdible(); #endif
+                boolean food = #if MC_VER >= V1_21 itemStack.get(DataComponents.FOOD) != null; #else itemStack.getItem().isEdible(); #endif
                 boolean emptyHand = player.getMainHandItem().getItem() == Items.AIR;
                 boolean canEat = player.canEat(false);
 
