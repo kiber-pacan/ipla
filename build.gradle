@@ -160,58 +160,60 @@ subprojects {
     }
 
     if (loader != "common") {
-        modrinth {
-            token = credentials.getProperty("modrinthToken")
-            projectId = "ipla"
-            versionName = archives_name + " " + mod_version
-            versionNumber = mod_version
-            versionType = "release"
-            uploadFile = (Integer.valueOf(index) < 18) ? remapJar : jar
-            gameVersions = [rootProject.minecraft_version]
-            loaders = [loader]
-            changelog = file("CHANGELOG.md").toString()
-            dependencies {
-                if (loader.equals("fabric")) {
-                    required.project "fabric-api"
-                    required.project "modmenu"
-                    required.project "architectury-api"
-                } else if (loader.equals("forge") || loader.equals("neoforge")) {
-                    required.project "architectury-api"
+        afterEvaluate {
+            modrinth {
+                token = credentials.getProperty("modrinthToken")
+                projectId = "ipla"
+                versionName = archives_name + " " + mod_version
+                versionNumber = mod_version
+                versionType = "release"
+                uploadFile = (Integer.valueOf(index) < 18) ? tasks.named("remapJar") : tasks.named("shadowJar")
+                gameVersions = [rootProject.minecraft_version]
+                loaders = [loader]
+                changelog = file("CHANGELOG.md").toString()
+                dependencies {
+                    if (loader.equals("fabric")) {
+                        required.project "fabric-api"
+                        required.project "modmenu"
+                        required.project "architectury-api"
+                    } else if (loader.equals("forge") || loader.equals("neoforge")) {
+                        required.project "architectury-api"
+                    }
                 }
+                failSilently = true
             }
-            failSilently = true
-        }
 
-        tasks.register("publishCurseForge", net.darkhax.curseforgegradle.TaskPublishCurseForge) {
-            disableVersionDetection()
+            tasks.register("publishCurseForge", net.darkhax.curseforgegradle.TaskPublishCurseForge) {
+                disableVersionDetection()
 
-            def token = credentials.getProperty("curseToken")
-            if (token == null || token.isEmpty()) {
-                logger.warn("WARNING: CurseForge token is missing!")
-            }
-            apiToken = token ?: ""
+                def token = credentials.getProperty("curseToken")
+                if (token == null || token.isEmpty()) {
+                    logger.warn("WARNING: CurseForge token is missing!")
+                }
+                apiToken = token ?: ""
 
-            def uploadFile = (Integer.valueOf(index) < 18) ? tasks.named("remapJar") : tasks.named("jar")
-            def mainFile = upload("1124962", uploadFile)
+                def uploadFile = (Integer.valueOf(index) < 18) ? tasks.named("remapJar") : tasks.named("shadowJar")
+                def mainFile = upload("1124962", uploadFile)
 
-            mainFile.displayName = archives_name + " " + mod_version
-            mainFile.releaseType = "release"
+                mainFile.displayName = archives_name + " " + mod_version
+                mainFile.releaseType = "release"
 
-            mainFile.changelog = ""
-            mainFile.changelogType = "markdown"
+                mainFile.changelog = ""
+                mainFile.changelogType = "markdown"
 
-            def targetMcVersion = rootProject.minecraft_version
-            def targetLoader = (loader == "neoforge") ? "NeoForge" : loader.capitalize()
+                def targetMcVersion = rootProject.minecraft_version
+                def targetLoader = (loader == "neoforge") ? "NeoForge" : loader.capitalize()
 
-            mainFile.addGameVersion(targetMcVersion)
-            mainFile.addModLoader(targetLoader)
+                mainFile.addGameVersion(targetMcVersion)
+                mainFile.addModLoader(targetLoader)
 
-            mainFile.addEnvironment("Client", "server")
+                mainFile.addEnvironment("Client", "server")
 
-            if (loader.equals("fabric")) {
-                mainFile.addRequirement("fabric-api", "modmenu", "architectury-api")
-            } else if (loader.equals("forge") || loader.equals("neoforge")) {
-                mainFile.addRequirement("architectury-api")
+                if (loader.equals("fabric")) {
+                    mainFile.addRequirement("fabric-api", "modmenu", "architectury-api")
+                } else if (loader.equals("forge") || loader.equals("neoforge")) {
+                    mainFile.addRequirement("architectury-api")
+                }
             }
         }
     }

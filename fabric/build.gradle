@@ -76,8 +76,17 @@ processResources {
 }
 
 shadowJar {
-    configurations = [project.configurations.shadowBundle]
-    archiveClassifier = 'dev-shadow'
+    if (version_index < 18) {
+        configurations = [project.configurations.shadowBundle]
+        archiveClassifier = 'dev-shadow'
+    } else {
+        configurations = [project.configurations.shadowBundle]
+
+        from(sourceSets.main.output.classesDirs)
+        from(sourceSets.main.output.resourcesDir)
+
+        archiveClassifier = ""
+    }
 }
 
 if (version_index < 18) {
