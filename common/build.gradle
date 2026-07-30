@@ -14,7 +14,6 @@ repositories {
 int version_index = Integer.valueOf(rootProject.index)
 
 dependencies {
-    println("INDEX ${rootProject.index}")
     def impl_type = (version_index < 18) ? "modImplementation" : "implementation"
 
     add impl_type, "net.fabricmc:fabric-loader:$rootProject.fabric_loader_version"
