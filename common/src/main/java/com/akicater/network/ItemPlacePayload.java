@@ -1,9 +1,12 @@
 package com.akicater.network;
 
+import com.mojang.datafixers.util.Pair;
+
 #if MC_VER >= V1_21
 import com.akicater.IPLA_Client;
 import com.akicater.IPLA_Methods;
 import com.akicater.blocks.LayingItem;
+import com.mojang.datafixers.util.Pair;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -16,14 +19,17 @@ import org.jetbrains.annotations.NotNull;
 #if MC_VER >= V1_21_11
 import net.minecraft.resources.Identifier;
 #else
-import com.akicater.IPLA_Methods;
-import com.akicater.blocks.LayingItem;
+
 import net.minecraft.resources.ResourceLocation;
 #endif
 
+import net.minecraft.core.Vec3i;
+import com.akicater.IPLA_Methods;
+import com.akicater.blocks.LayingItem;
+import net.minecraft.core.Direction;
+
 import com.akicater.IPLA;
 import com.akicater.blocks.LayingItemEntity;
-import com.mojang.datafixers.util.Pair;
 import net.minecraft.core.BlockPos;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -38,6 +44,8 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.BlockHitResult;
 
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.phys.Vec3;
+
 import java.util.Random;
 import java.util.logging.Logger;
 
@@ -83,18 +91,32 @@ public #if MC_VER >= V1_21 record #else class #endif ItemPlacePayload #if MC_VER
 
         BlockPos pos = hitResult.getBlockPos();
 
+
+
         Block hittedBlock = level.getBlockState(pos).getBlock();
         if (hittedBlock == Blocks.AIR || hittedBlock == Blocks.CAVE_AIR || hittedBlock == Blocks.WATER) return; // Preventing placing items in midair
 
-        BlockPos relativePos = pos.relative(hitResult.getDirection(), 1);
+        Vec3 location = hitResult.getLocation();
+        Direction direction = hitResult.getDirection();
+        Vec3 relativeLocation =
+                location.add(
+                        direction.getStepX() * 0.249,
+                        direction.getStepY() * 0.249,
+                        direction.getStepZ() * 0.249
+                );
+        int x = (int) relativeLocation.x - ((relativeLocation.x < 0) ? 1 : 0);
+        int y = (int) relativeLocation.y - ((relativeLocation.y < 0) ? 1 : 0);
+        int z = (int) relativeLocation.z - ((relativeLocation.z < 0) ? 1 : 0);
+        BlockPos relativePos = new BlockPos(x, y, z);
 
         BlockState relativeBlockState = level.getBlockState(relativePos);
         Block relativeBlock = relativeBlockState.getBlock();
 
         boolean isEmpty = relativeBlock == Blocks.AIR || relativeBlock == Blocks.CAVE_AIR || relativeBlock == Blocks.WATER; // Checking if block is empty
-        boolean isLayingItem = relativeBlock instanceof LayingItem; // Checking if block is laying item
+        boolean isLayingItemRelative = relativeBlock instanceof LayingItem; // Checking if block is laying item
+        boolean isLayingItemHitted = hittedBlock instanceof LayingItem;
 
-        if (isEmpty || isLayingItem) {
+        if (isEmpty || isLayingItemRelative) {
             BlockState state = null;
             if (isEmpty) {
                 createBlockEntity(level, relativeBlockState, relativeBlock, relativePos, stack);
@@ -103,19 +125,25 @@ public #if MC_VER >= V1_21 record #else class #endif ItemPlacePayload #if MC_VER
             }
 
             LayingItemEntity entity = (LayingItemEntity) level #if MC_VER < V1_21 .getChunk(relativePos) #endif.getBlockEntity(relativePos);
+            if (entity == null) return;
+
             int directionIndex = hitResult.getDirection().get3DDataValue();
 
-            if (entity == null) return;
-            boolean quad = entity.quad.get(directionIndex);
+            Pair<Integer, Boolean> pair = IPLA_Methods.getSlotFromHit(hitResult, isLayingItemRelative && isLayingItemHitted, entity, player);
+            int slot = pair.getFirst();
+            boolean quad = pair.getSecond();
 
-            int slot = IPLA_Methods.getSlotFromHit(hitResult, true, quad || player.isDiscrete());
-            if (!((quad) ? entity.isSubSlotEmpty(slot) : entity.isSlotEmpty(directionIndex))) return;
+            if ((quad) ? !entity.isSubSlotEmpty(slot) : !entity.isSlotEmpty(slot / 4)) {
+                return;
+            }
             float flooredDegrees = getDegrees();
 
             entity.setItem(slot, stack);
-            entity.rot.set(slot, flooredDegrees);
 
-            entity.quad.set(directionIndex, player.isDiscrete() || quad);
+            entity.rot.set(slot, flooredDegrees);
+            entity.lastRot.set(slot, flooredDegrees);
+
+            entity.quad.set(slot / 4, player.isDiscrete() || quad);
 
             level.playSound(null, pos.getX(), pos.getY(), pos.getZ(), SoundEvents.PAINTING_PLACE, SoundSource.BLOCKS, 1, 1.4f);
 
