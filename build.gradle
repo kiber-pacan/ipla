@@ -17,6 +17,8 @@ project.gradle.ext.getProperties().each { prop ->
     }
 }
 
+int version_index = Integer.parseInt(version_index_property)
+
 
 architectury {
     minecraft = project.minecraft_version
@@ -66,7 +68,7 @@ allprojects {
 }
 
 subprojects {
-    if (Integer.valueOf(index) < 18) {
+    if (version_index < 18) {
         apply plugin: 'dev.architectury.loom'
     } else {
         apply plugin: 'dev.architectury.loom-no-remap'
@@ -86,7 +88,7 @@ subprojects {
     }
 
     loom {
-        if (Integer.valueOf(index) < 18) {
+        if (version_index < 18) {
             silentMojangMappingsLicense()
         }
     }
@@ -105,7 +107,14 @@ subprojects {
                 mod_version : project.mod_version,
                 minecraft_version : project.minecraft_version,
                 fabric_loader_version : project.fabric_loader_version,
-                architectury_api_version : project.architectury_api_version,
+                // ARCHITECTURY
+                architectury_api_version_fabric : project.architectury_api_version_fabric,
+                architectury_api_version_neoforge : project.architectury_api_version_neoforge,
+                architectury_api_version_forge : project.architectury_api_version_forge,
+                //JADE
+                jade_version_fabric : project.jade_versions[0],
+                jade_version_neoforge : project.jade_versions[1],
+                jade_version_forge : project.jade_versions[2],
                 java : project.java_version,
                 name : "Ipla",
                 modid : project.archives_name,
@@ -144,10 +153,10 @@ subprojects {
 
         minecraft "net.minecraft:minecraft:$rootProject.minecraft_version"
 
-        if (Integer.valueOf(index) < 18) {
+        if (version_index < 18) {
             mappings loom.layered() {
                 officialMojangMappings()
-                parchment("org.parchmentmc.data:parchment-${rootProject.minecraft_version}:${rootProject.parchment}@zip")
+                parchment("org.parchmentmc.data:parchment-${rootProject.minecraft_version}:${rootProject.parchment_version}@zip")
             }
         }
     }
@@ -167,7 +176,7 @@ subprojects {
                 versionName = archives_name + " " + mod_version
                 versionNumber = mod_version
                 versionType = "release"
-                uploadFile = (Integer.valueOf(index) < 18) ? tasks.named("remapJar") : tasks.named("shadowJar")
+                uploadFile = (version_index < 18) ? tasks.named("remapJar") : tasks.named("shadowJar")
                 gameVersions = [rootProject.minecraft_version]
                 loaders = [loader]
                 changelog = file("CHANGELOG.md").toString()

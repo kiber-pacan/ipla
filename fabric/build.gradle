@@ -2,26 +2,12 @@ plugins {
     id 'com.gradleup.shadow'
 }
 
+// VARIABLES
+int version_index = Integer.valueOf(providers.gradleProperty("version_index_property").get())
+
 architectury {
     platformSetupLoomIde()
     fabric()
-}
-
-configurations {
-    common {
-        canBeResolved = true
-        canBeConsumed = false
-    }
-    compileClasspath.extendsFrom common
-    runtimeClasspath.extendsFrom common
-    developmentFabric.extendsFrom common
-
-    // Files in this configuration will be bundled into your mod using the Shadow plugin.
-    // Don't use the `shadow` configuration from the plugin itself as it's meant for excluding files.
-    shadowBundle {
-        canBeResolved = true
-        canBeConsumed = false
-    }
 }
 
 repositories {
@@ -41,15 +27,31 @@ repositories {
         url = "https://api.modrinth.com/maven"
     }
 }
-int version_index = Integer.valueOf(rootProject.index)
+
+configurations {
+    common {
+        canBeResolved = true
+        canBeConsumed = false
+    }
+    compileClasspath.extendsFrom common
+    runtimeClasspath.extendsFrom common
+    developmentFabric.extendsFrom common
+
+    // Files in this configuration will be bundled into your mod using the Shadow plugin.
+    // Don't use the `shadow` configuration from the plugin itself as it's meant for excluding files.
+    shadowBundle {
+        canBeResolved = true
+        canBeConsumed = false
+    }
+}
 
 dependencies {
     def impl_type = (version_index < 18) ? "modImplementation" : "implementation"
 
     add impl_type, "net.fabricmc:fabric-loader:$rootProject.fabric_loader_version"
     add impl_type, "net.fabricmc.fabric-api:fabric-api:$rootProject.fabric_api_version"
-    add impl_type, "dev.architectury:architectury-fabric:$rootProject.architectury_api_version"
-    add impl_type, "com.terraformersmc:modmenu:${rootProject.modmenu_version}"
+    add impl_type, "maven.modrinth:architectury-api:$rootProject.architectury_api_version_fabric"
+    add impl_type, "maven.modrinth:modmenu:${rootProject.modmenu_version}"
     add impl_type, "maven.modrinth:jade:${(rootProject.hasProperty("jade_version_fabric")) ? rootProject.jade_version_fabric : rootProject.jade_version}${((version_index < 5 || version_index == 6)) ? "" : "+fabric"}"
 
     if (version_index < 18)
@@ -75,6 +77,8 @@ processResources {
     }
 }
 
+
+// JAR
 shadowJar {
     if (version_index < 18) {
         configurations = [project.configurations.shadowBundle]

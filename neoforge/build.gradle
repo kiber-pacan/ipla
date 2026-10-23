@@ -22,6 +22,7 @@ configurations {
     }
 }
 
+
 repositories {
     maven {
         name 'Xander Maven'
@@ -47,7 +48,7 @@ dependencies {
 
     def impl_type = (version_index < 18) ? "modImplementation" : "implementation"
 
-    add impl_type, "dev.architectury:architectury-neoforge:${rootProject.architectury_api_version}"
+    add impl_type, "maven.modrinth:architectury-api:${rootProject.architectury_api_version_neoforge}"
     add impl_type, "maven.modrinth:jade:${(rootProject.hasProperty("jade_version_neoforge")) ? rootProject.jade_version_neoforge : rootProject.jade_version}${(version_index < 5 || version_index == 6) ? "" : "+neoforge"}"
 
     if (version_index < 18)
@@ -93,7 +94,7 @@ if (version_index < 18) {
         archiveClassifier.set("")
     }
     assemble {
-        dependsOn("jar")
+        dependsOn("shadowJar")
     }
 }
 

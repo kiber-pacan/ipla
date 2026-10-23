@@ -29,7 +29,14 @@ side = "BOTH"
 [[dependencies."${modid}"]]
 modId = "architectury"
 type = "required"
-versionRange = "[${architectury_api_version},)"
+versionRange = "[${architectury_api_version_neoforge},)"
+ordering = "AFTER"
+side = "BOTH"
+
+[[dependencies."${modid}"]]
+modId = "jade"
+type = "required"
+versionRange = "[${jade_version_neoforge},)"
 ordering = "AFTER"
 side = "BOTH"
 

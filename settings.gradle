@@ -1,3 +1,6 @@
+import groovy.json.JsonSlurper
+import groovy.xml.XmlSlurper
+
 pluginManagement {
     repositories {
         maven { url "https://maven.fabricmc.net/" }
@@ -6,15 +9,21 @@ pluginManagement {
         maven { url = 'https://maven.maxhenkel.de/repository/public' }
         gradlePluginPortal()
     }
+    int version_index = Integer.valueOf(providers.gradleProperty("version_index_property").get())
+
+
     // For versions <= than 1.19.4 use 1.13 version of architectury loom to stop forge from crying
     resolutionStrategy {
         eachPlugin {
             if (requested.id.id == 'dev.architectury.loom') {
-                useVersion(((Integer.valueOf(index) <= 4) ? "1.13-SNAPSHOT" : "1.17-SNAPSHOT"))
+                useVersion(((version_index <= 4) ? "1.13-SNAPSHOT" : "1.17-SNAPSHOT"))
             }
         }
     }
 }
+
+// VARIABLES
+int version_index = Integer.valueOf(providers.gradleProperty("version_index_property").get())
 
 rootProject.name = 'ipla'
 
@@ -40,13 +49,6 @@ def writeBuildGradlePredefine(List<String> mc_versions, int version) {
 }
 
 // Get minecraft version index
-int version
-if (hasProperty("index")) {
-    version = Integer.valueOf(index)
-} else {
-    version = 0
-}
-
 def mc_versions = [
         "1.16.5",  // 0
         "1.17.1",  // 1
@@ -72,13 +74,15 @@ def mc_versions = [
         "26.2",    // 21
 ]
 
-println("version: ${version}-${mc_versions[version]}")
+String mc_version = mc_versions.get(version_index)
 
-writeBuildGradlePredefine(mc_versions, version)
+println("version: ${version_index}-${mc_version}")
+
+writeBuildGradlePredefine(mc_versions, version_index)
 
 // Loading properties
 def props = new Properties()
-props.load(new FileInputStream("${rootDir}/versions/${mc_versions.get(version)}.properties"))
+props.load(new FileInputStream("${rootDir}/versions/${mc_version}.properties"))
 
 props.each { prop ->
     //if (prop.key != null && prop.value != null)
@@ -92,3 +96,131 @@ def platforms = props.enabled_platforms.split(",")
 for (platform in platforms) {
     include platform
 }
+
+
+
+// ------ VERSION FETCHING START ------
+
+// LINKS
+String FABRIC_LOADER_VERSION_LINK = "https://meta.fabricmc.net/v2/versions/loader"
+
+String FABRIC_API_VERSION_LINK = "https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/maven-metadata.xml"
+String FORGE_VERSION_LINK = "https://maven.minecraftforge.net/net/minecraftforge/forge/maven-metadata.xml"
+String NEOFORGE_VERSION_LINK = "https://maven.neoforged.net/releases/net/neoforged/neoforge/maven-metadata.xml"
+String PARCHMENT_BASE = "https://ldtteam.jfrog.io/artifactory/api/storage/parchmentmc-public/org/parchmentmc/data/"
+
+static List<String> parse_xml_versioning(String link) {
+    return new XmlSlurper().parseText(URI.create(link).toURL()
+               .getText()).getAt("versioning").getAt("versions").getAt("version").collect() { it.text() }
+
+}
+
+def get_version = { String link ->
+    return parse_xml_versioning(link).reverse().find {
+        api -> (api as String).contains(mc_version)
+    }
+}
+
+def get_mod_version = {
+    String modid -> {
+        var versions =
+                new JsonSlurper().parseText(URI.create("https://api.modrinth.com/v2/project/${modid}/version").toURL().getText())
+
+        return versions.find {version -> {
+            version["game_versions"].contains(mc_version)
+        }}["version_number"]
+    }
+}
+
+// FABRIC, NEOFORGE, FORGE
+def get_mod_version_loader_dependent = {
+    String modid -> {
+        var versions =
+                new JsonSlurper().parseText(URI.create("https://api.modrinth.com/v2/project/${modid}/version").toURL().getText())
+
+        List<String> versions_loader_dependent = new ArrayList<>()
+
+        def loaders = ["fabric", "neoforge", "forge"]
+
+        for (var loader : loaders) {
+            var version_object = versions.find {version -> {
+                version["game_versions"].contains(mc_version) && version["loaders"].contains("fabric")
+            }}
+            versions_loader_dependent.add((version_object != null) ? version_object["version_number"] : "")
+        }
+
+        return versions_loader_dependent
+    }
+}
+
+// === FABRIC START ===
+var fabric_loader_version
+        = new JsonSlurper().parseText(URI.create(FABRIC_LOADER_VERSION_LINK).toURL()
+        .getText())[0]["version"]
+
+String fabric_api_version = get_version(FABRIC_API_VERSION_LINK)
+// === FABRIC END ===
+
+
+// === NEOFORGE START ===
+String neoforge_version = get_version(NEOFORGE_VERSION_LINK)
+// === NEOFORGE END ===
+
+
+// === FORGE START ===
+String forge_version = (version_index < 18) ? parse_xml_versioning(FORGE_VERSION_LINK).reverse().find {
+    api -> (api as String).contains(mc_version)
+} : "fuck you"
+// === FORGE END ===
+
+
+// === PARCHMENT START ===
+var parchemnt_acceptable =
+        new JsonSlurper().parseText(URI.create(PARCHMENT_BASE).toURL().getText())["children"]
+                .collect {
+                    it ->
+                        {
+                            String version = it["uri"]
+                            return version.substring(11, version.size())
+                        }
+                }
+if (parchemnt_acceptable.contains(mc_version)) {
+    String parchment_version = new JsonSlurper().parseText(URI.create(PARCHMENT_BASE + "/parchment-" + mc_version).toURL().getText())["children"][0]["uri"]
+    parchment_version = parchment_version.substring(1, parchment_version.size())
+
+    gradle.ext.parchment_version = parchment_version
+}
+// === PARCHMENT END ===
+
+
+
+
+
+// === LOADERS START ===
+gradle.ext.fabric_loader_version = fabric_loader_version
+gradle.ext.fabric_api_version = fabric_api_version
+gradle.ext.neoforge_version = neoforge_version
+gradle.ext.forge_version = forge_version
+// === LOADERS END ===
+
+// === MODRINTH START ===
+// MODMENU
+gradle.ext.modmenu_version = get_mod_version("modmenu")
+
+//TODO SIMPLIFY THIS SHIT
+
+// ARCHITECTURY
+var architectury_api_versions = get_mod_version_loader_dependent("architectury-api")
+gradle.ext.architectury_api_version_fabric = architectury_api_versions[0]
+gradle.ext.architectury_api_version_neoforge = architectury_api_versions[1]
+gradle.ext.architectury_api_version_forge = architectury_api_versions[2]
+
+//JADE
+var jade_versions = get_mod_version_loader_dependent("jade")
+gradle.ext.jade_versions = jade_versions
+gradle.ext.jade_version_fabric = jade_versions[0]
+gradle.ext.jade_version_neoforge = jade_versions[1]
+gradle.ext.jade_version_forge = jade_versions[2]
+// === MODRINTH END ===
+
+// ------ VERSION FETCHING END ------
