@@ -107,14 +107,6 @@ subprojects {
                 mod_version : project.mod_version,
                 minecraft_version : project.minecraft_version,
                 fabric_loader_version : project.fabric_loader_version,
-                // ARCHITECTURY
-                architectury_api_version_fabric : project.architectury_api_version_fabric,
-                architectury_api_version_neoforge : project.architectury_api_version_neoforge,
-                architectury_api_version_forge : project.architectury_api_version_forge,
-                //JADE
-                jade_version_fabric : project.jade_versions[0],
-                jade_version_neoforge : project.jade_versions[1],
-                jade_version_forge : project.jade_versions[2],
                 java : project.java_version,
                 name : "Ipla",
                 modid : project.archives_name,
@@ -124,17 +116,35 @@ subprojects {
                 sources : "https://github.com/kiber-pacan/ipla"
         ]
 
+        def add_loader_dependent_property = {
+            String id -> {
+                List<String> versions = gradle.ext.get(id + "s")
+                replaceProperties.put(versions[0], versions[1])
+                replaceProperties.put(versions[2], versions[3])
+                replaceProperties.put(versions[4], versions[5])
+            }
+        }
+        def add_loader_independent_property = {
+            String id -> {
+                String version = gradle.ext.get(id)
+                replaceProperties.put(id, version)
+            }
+        }
+
+        for (String mod : gradle.ext.get("loader_dependent")) {
+            add_loader_dependent_property(mod)
+        }
+
+        for (String mod : gradle.ext.get("loader_independent")) {
+            add_loader_independent_property(mod)
+        }
+
+
         if (rootProject.hasProperty("forge_version")) {
             replaceProperties.put("forge_loader_version", project.forge_version)
         }
         if (rootProject.hasProperty("neoforge_version")) {
             replaceProperties.put("neoforge_loader_version", project.neoforge_version)
-        }
-        if (rootProject.hasProperty("yacl_version")) {
-            replaceProperties.put("yacl_version", project.yacl_version)
-        }
-        if (rootProject.hasProperty("midnightlib_version")) {
-            replaceProperties.put("midnightlib_version", project.midnightlib_version)
         }
 
         def files = ["fabric.mod.json", "META-INF/mods.toml", "META-INF/neoforge.mods.toml", "quilt.mod.json"]

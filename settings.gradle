@@ -99,8 +99,9 @@ for (platform in platforms) {
 
 
 
-// ------ VERSION FETCHING START ------
+// region ------ VERSION FETCHING ------
 
+// region FUNCTIONS
 // LINKS
 String FABRIC_LOADER_VERSION_LINK = "https://meta.fabricmc.net/v2/versions/loader"
 
@@ -132,27 +133,61 @@ def get_mod_version = {
     }
 }
 
-// FABRIC, NEOFORGE, FORGE
-def get_mod_version_loader_dependent = {
+// [fabric_version, fabric_version_name,
+//  neoforge_version, neoforge_version_name,
+//  forge_version, forge_version_name,
+//  base_version_name]
+def get_loader_dependent = {
     String modid -> {
         var versions =
                 new JsonSlurper().parseText(URI.create("https://api.modrinth.com/v2/project/${modid}/version").toURL().getText())
 
         List<String> versions_loader_dependent = new ArrayList<>()
 
-        def loaders = ["fabric", "neoforge", "forge"]
+        List<String> loaders = ["fabric", "neoforge", "forge"]
 
         for (var loader : loaders) {
             var version_object = versions.find {version -> {
-                version["game_versions"].contains(mc_version) && version["loaders"].contains("fabric")
+                version["game_versions"].contains(mc_version) && version["loaders"].contains(loader)
             }}
-            versions_loader_dependent.add((version_object != null) ? version_object["version_number"] : "")
+
+            versions_loader_dependent.add(modid.replace("-", "_") + "_version_" + loader)
+            versions_loader_dependent.add((version_object != null) ? version_object["version_number"] as String : "")
         }
+        String base = modid.replace("-", "_") + "_version"
+
+        versions_loader_dependent.add(base)
+        gradle.ext.get("loader_dependent").add(base)
 
         return versions_loader_dependent
     }
 }
 
+def add_loader_dependent = {
+    String modid -> {
+        List<String> versions = get_loader_dependent(modid)
+
+        gradle.ext.set(versions[0], versions[1])
+        gradle.ext.set(versions[2], versions[3])
+        gradle.ext.set(versions[4], versions[5])
+        gradle.ext.set(versions[6] + "s", versions)
+
+        println "ADDED " + versions[6]
+        gradle.ext.get("loader_dependent").add(versions[6])
+    }
+}
+
+def add_loader_independent = {
+    String modid -> {
+        String version = modid.replace("-", "_") + "_version"
+
+        gradle.ext.set(version, get_mod_version(modid))
+        gradle.ext.get("loader_independent").add(version)
+    }
+}
+// endregion
+
+// region LOADERS
 // === FABRIC START ===
 var fabric_loader_version
         = new JsonSlurper().parseText(URI.create(FABRIC_LOADER_VERSION_LINK).toURL()
@@ -173,8 +208,13 @@ String forge_version = (version_index < 18) ? parse_xml_versioning(FORGE_VERSION
 } : "fuck you"
 // === FORGE END ===
 
+gradle.ext.fabric_loader_version = fabric_loader_version
+gradle.ext.fabric_api_version = fabric_api_version
+gradle.ext.neoforge_version = neoforge_version
+gradle.ext.forge_version = forge_version
+// endregion
 
-// === PARCHMENT START ===
+// region === PARCHMENT ===
 var parchemnt_acceptable =
         new JsonSlurper().parseText(URI.create(PARCHMENT_BASE).toURL().getText())["children"]
                 .collect {
@@ -190,37 +230,23 @@ if (parchemnt_acceptable.contains(mc_version)) {
 
     gradle.ext.parchment_version = parchment_version
 }
-// === PARCHMENT END ===
+// endregion
+
+// region === MODRINTH ===
+
+
+def loader_independent = ["modmenu"]
+gradle.ext.set("loader_independent", [])
+
+
+for (String modid : loader_independent) add_loader_independent(modid)
 
 
 
+def loader_dependent = ["architectury-api", "jade"]
+gradle.ext.set("loader_dependent", [])
 
+for (String modid : loader_dependent) add_loader_dependent(modid)
+// endregion
 
-// === LOADERS START ===
-gradle.ext.fabric_loader_version = fabric_loader_version
-gradle.ext.fabric_api_version = fabric_api_version
-gradle.ext.neoforge_version = neoforge_version
-gradle.ext.forge_version = forge_version
-// === LOADERS END ===
-
-// === MODRINTH START ===
-// MODMENU
-gradle.ext.modmenu_version = get_mod_version("modmenu")
-
-//TODO SIMPLIFY THIS SHIT
-
-// ARCHITECTURY
-var architectury_api_versions = get_mod_version_loader_dependent("architectury-api")
-gradle.ext.architectury_api_version_fabric = architectury_api_versions[0]
-gradle.ext.architectury_api_version_neoforge = architectury_api_versions[1]
-gradle.ext.architectury_api_version_forge = architectury_api_versions[2]
-
-//JADE
-var jade_versions = get_mod_version_loader_dependent("jade")
-gradle.ext.jade_versions = jade_versions
-gradle.ext.jade_version_fabric = jade_versions[0]
-gradle.ext.jade_version_neoforge = jade_versions[1]
-gradle.ext.jade_version_forge = jade_versions[2]
-// === MODRINTH END ===
-
-// ------ VERSION FETCHING END ------
+// endregion
