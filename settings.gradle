@@ -9,7 +9,7 @@ pluginManagement {
         maven { url = 'https://maven.maxhenkel.de/repository/public' }
         gradlePluginPortal()
     }
-    int version_index = Integer.valueOf(providers.gradleProperty("version_index_property").get())
+    int version_index = Integer.valueOf(providers.gradleProperty("version_index").get())
 
 
     // For versions <= than 1.19.4 use 1.13 version of architectury loom to stop forge from crying
@@ -23,15 +23,15 @@ pluginManagement {
 }
 
 // VARIABLES
-int version_index = Integer.valueOf(providers.gradleProperty("version_index_property").get())
+int version_index = Integer.valueOf(providers.gradleProperty("version_index").get())
 
 rootProject.name = 'ipla'
 
 // Create build.properties file for preprocessor
-def writeBuildGradlePredefine(List<String> mc_versions, int version) {
+def write_gradle_predefine(List<String> minecraft_versions, int version) {
     StringBuilder sb = new StringBuilder()
-    for (int i = 0; i < mc_versions.size(); i++) {
-        String verStr = mc_versions[i].replace(".", "_")
+    for (int i = 0; i < minecraft_versions.size(); i++) {
+        String verStr = minecraft_versions[i].replace(".", "_")
         sb.append("V" + verStr + "=" + i.toString() + "\n")
 
         if (version == i)
@@ -49,7 +49,7 @@ def writeBuildGradlePredefine(List<String> mc_versions, int version) {
 }
 
 // Get minecraft version index
-def mc_versions = [
+def minecraft_versions = [
         "1.16.5",  // 0
         "1.17.1",  // 1
         "1.18.2",  // 2
@@ -72,31 +72,44 @@ def mc_versions = [
         "26.1.1",  // 19
         "26.1.2",  // 20
         "26.2",    // 21
+        "26.3",    // 22
 ]
 
-String mc_version = mc_versions.get(version_index)
+def minecraft_version = minecraft_versions.get(version_index)
+gradle.ext.set("minecraft_version", minecraft_version)
 
-println("version: ${version_index}-${mc_version}")
+println("version: ${minecraft_version}, index: ${version_index}")
 
-writeBuildGradlePredefine(mc_versions, version_index)
 
-// Loading properties
-def props = new Properties()
-props.load(new FileInputStream("${rootDir}/versions/${mc_version}.properties"))
+write_gradle_predefine(minecraft_versions, version_index)
 
-props.each { prop ->
-    //if (prop.key != null && prop.value != null)
-    gradle.ext.set(prop.key, prop.value)
+
+// region === JAVA VERSION START ===
+static def resolve_java_version(int v) {
+    if (v < 7) return "17"
+    if (v < 17) return "21"
+    return "25"
 }
 
-// Including platforms
+gradle.ext.set("java_version", resolve_java_version(version_index))
+// endregion === JAVA VERSION END ===
+
+// region === PLATFORMS START ===
 include "common"
+def platforms = ["fabric"]
 
-def platforms = props.enabled_platforms.split(",")
-for (platform in platforms) {
-    include platform
+static def resolve_forge_family(int v, def platforms) {
+    if (v == 6) return
+
+    if (v < 7)  platforms.add("forge")
+    else        platforms.add("neoforge")
 }
 
+resolve_forge_family(version_index, platforms)
+for (String platform : platforms) include(platform)
+
+gradle.ext.set("platforms", platforms.join(",") as String)
+// endregion === PLATFORMS END ===
 
 
 // region ------ VERSION FETCHING ------
@@ -118,7 +131,7 @@ static List<String> parse_xml_versioning(String link) {
 
 def get_version = { String link ->
     return parse_xml_versioning(link).reverse().find {
-        api -> (api as String).contains(mc_version)
+        api -> (api as String).contains(minecraft_version)
     }
 }
 
@@ -128,7 +141,7 @@ def get_mod_version = {
                 new JsonSlurper().parseText(URI.create("https://api.modrinth.com/v2/project/${modid}/version").toURL().getText())
 
         return versions.find {version -> {
-            version["game_versions"].contains(mc_version)
+            version["game_versions"].contains(minecraft_version)
         }}["version_number"]
     }
 }
@@ -148,7 +161,7 @@ def get_loader_dependent = {
 
         for (var loader : loaders) {
             var version_object = versions.find {version -> {
-                version["game_versions"].contains(mc_version) && version["loaders"].contains(loader)
+                version["game_versions"].contains(minecraft_version) && version["loaders"].contains(loader)
             }}
 
             versions_loader_dependent.add(modid.replace("-", "_") + "_version_" + loader)
@@ -167,12 +180,12 @@ def add_loader_dependent = {
     String modid -> {
         List<String> versions = get_loader_dependent(modid)
 
-        gradle.ext.set(versions[0], versions[1])
-        gradle.ext.set(versions[2], versions[3])
-        gradle.ext.set(versions[4], versions[5])
+        gradle.ext.set(versions[0], versions[1]) //modid_fabric = ver
+        gradle.ext.set(versions[2], versions[3]) //modid_neoforge = ver
+        gradle.ext.set(versions[4], versions[5]) //modid_forge = ver]
+        //modid_versions = [fabric_ver, neoforge_ver, forge_ver]
         gradle.ext.set(versions[6] + "s", versions)
 
-        println "ADDED " + versions[6]
         gradle.ext.get("loader_dependent").add(versions[6])
     }
 }
@@ -204,7 +217,7 @@ String neoforge_version = get_version(NEOFORGE_VERSION_LINK)
 
 // === FORGE START ===
 String forge_version = (version_index < 18) ? parse_xml_versioning(FORGE_VERSION_LINK).reverse().find {
-    api -> (api as String).contains(mc_version)
+    api -> (api as String).contains(minecraft_version)
 } : "fuck you"
 // === FORGE END ===
 
@@ -224,8 +237,18 @@ var parchemnt_acceptable =
                             return version.substring(11, version.size())
                         }
                 }
-if (parchemnt_acceptable.contains(mc_version)) {
-    String parchment_version = new JsonSlurper().parseText(URI.create(PARCHMENT_BASE + "/parchment-" + mc_version).toURL().getText())["children"][0]["uri"]
+
+static def resolve_parchment_version(def versions, def minecraft_version) {
+    return versions.find { version ->
+        !version.get("uri").contains("SNAPSHOT")
+    }.get("uri") as String
+}
+
+if (parchemnt_acceptable.contains(minecraft_version)) {
+    String parchment_version = resolve_parchment_version(
+            new JsonSlurper().parseText(URI.create(PARCHMENT_BASE + "/parchment-" + minecraft_version).toURL().getText())["children"],
+            minecraft_version
+    )
     parchment_version = parchment_version.substring(1, parchment_version.size())
 
     gradle.ext.parchment_version = parchment_version

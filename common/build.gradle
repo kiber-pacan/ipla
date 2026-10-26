@@ -1,9 +1,9 @@
 // VARIABLES
-int version_index = Integer.valueOf(providers.gradleProperty("version_index_property").get())
+int version_index = Integer.valueOf(providers.gradleProperty("version_index").get())
 
 
 architectury {
-    common rootProject.enabled_platforms.split(',')
+    common rootProject.platforms.split(",")
 }
 
 repositories {

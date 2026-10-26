@@ -17,7 +17,7 @@ project.gradle.ext.getProperties().each { prop ->
     }
 }
 
-int version_index = Integer.parseInt(version_index_property)
+int version_index = Integer.parseInt(version_index)
 
 
 architectury {
@@ -64,7 +64,9 @@ allprojects {
 
     tasks.withType(JavaCompile).configureEach {
         options.compilerArgs += ["-ALOADER=${loaders[loader]}"]
+
     }
+
 }
 
 subprojects {
