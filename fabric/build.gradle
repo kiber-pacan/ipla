@@ -52,7 +52,7 @@ dependencies {
     add impl_type, "net.fabricmc.fabric-api:fabric-api:$rootProject.fabric_api_version"
     add impl_type, "maven.modrinth:architectury-api:$rootProject.architectury_api_version_fabric"
     add impl_type, "maven.modrinth:modmenu:${rootProject.modmenu_version}"
-    add impl_type, "maven.modrinth:jade:${(rootProject.hasProperty("jade_version_fabric"))}"
+    add impl_type, "maven.modrinth:jade:${(rootProject.jade_version_fabric)}"
 
     if (version_index < 18)
         common(project(path: ':common', configuration: 'namedElements')) { transitive false }

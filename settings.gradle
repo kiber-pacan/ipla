@@ -131,7 +131,7 @@ static List<String> parse_xml_versioning(String link) {
 
 def get_version = { String link ->
     return parse_xml_versioning(link).reverse().find {
-        api -> (api as String).contains(minecraft_version)
+        api -> (api as String).equals(minecraft_version)
     }
 }
 
@@ -206,11 +206,13 @@ var fabric_loader_version
         = new JsonSlurper().parseText(URI.create(FABRIC_LOADER_VERSION_LINK).toURL()
         .getText())[0]["version"]
 
+println get_version(FABRIC_API_VERSION_LINK)
 String fabric_api_version = get_version(FABRIC_API_VERSION_LINK)
 // === FABRIC END ===
 
 
 // === NEOFORGE START ===
+println get_version(NEOFORGE_VERSION_LINK)
 String neoforge_version = get_version(NEOFORGE_VERSION_LINK)
 // === NEOFORGE END ===
 
@@ -240,7 +242,7 @@ var parchemnt_acceptable =
 
 static def resolve_parchment_version(def versions, def minecraft_version) {
     return versions.find { version ->
-        !version.get("uri").contains("SNAPSHOT")
+        !version.get("uri").contains("SNAPSHOT") && ! version.get("uri").contains("metadata")
     }.get("uri") as String
 }
 

@@ -17,7 +17,7 @@ dependencies {
 
     add impl_type, "net.fabricmc:fabric-loader:$rootProject.fabric_loader_version"
     add impl_type, "maven.modrinth:architectury-api:$rootProject.architectury_api_version_fabric"
-    add impl_type, "maven.modrinth:jade:${(rootProject.hasProperty("jade_version_fabric")) ? rootProject.jade_version_fabric : rootProject.jade_version}${((version_index < 5 || version_index == 6)) ? "" : "+fabric"}"
+    add impl_type, "maven.modrinth:jade:${rootProject.jade_version_fabric}"
 
 
     implementation "com.electronwill.night-config:core:3.6.6"
