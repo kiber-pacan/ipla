@@ -54,7 +54,20 @@ import static com.akicater.IPLA.*;
 public #if MC_VER >= V1_21 record #else class #endif ItemPlacePayload #if MC_VER >= V1_21 (BlockPos pos, BlockHitResult hitResult) implements CustomPacketPayload #endif {
     #if MC_VER >= V1_21
     public static final Type<ItemPlacePayload> TYPE = new Type<>(#if MC_VER >= V1_21_11 Identifier #else ResourceLocation #endif.fromNamespaceAndPath(MOD_ID, "place_item"));
-    public static final StreamCodec<FriendlyByteBuf, ItemPlacePayload> CODEC = StreamCodec.of((buf, value) -> buf.writeBlockPos(value.pos).writeBlockHitResult(value.hitResult), buf -> new ItemPlacePayload(buf.readBlockPos() ,buf.readBlockHitResult()));
+    public static final StreamCodec<FriendlyByteBuf, ItemPlacePayload> CODEC =
+            StreamCodec.of((buf, value) -> {
+                buf.writeBlockPos(value.pos);
+                #if MC_VER < V26_3
+                buf.writeBlockHitResult(value.hitResult);
+                #else
+                BlockHitResult.STREAM_CODEC.encode(buf, value.hitResult);
+                #endif
+            }, buf -> new ItemPlacePayload(
+                    buf.readBlockPos(),
+                    #if MC_VER < V26_3 buf.readBlockHitResult() #else BlockHitResult.STREAM_CODEC.decode(buf) #endif));
+
+
+           // = StreamCodec.of((buf, value) -> buf.writeBlockPos(value.pos).writeBlockHitResult(value.hitResult), buf -> new ItemPlacePayload(buf.readBlockPos() ,buf.readBlockHitResult()));
 
     @Override
     public @NotNull Type<? extends CustomPacketPayload> type() {

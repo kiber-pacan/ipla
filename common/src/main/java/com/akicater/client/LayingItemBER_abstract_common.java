@@ -30,6 +30,7 @@ import net.minecraft.world.phys.Vec3;
 
 import java.util.*;
 import java.util.random.RandomGenerator;
+import java.util.random.RandomGeneratorFactory;
 
 #if MC_VER >= V1_21_9
 import net.minecraft.client.renderer.item.ItemStackRenderState;
@@ -48,6 +49,7 @@ import net.minecraft.util.RandomSource;
 #endif
 
 #if MC_VER >= V1_19_4
+import org.joml.Matrix4fc;
 import org.joml.Quaternionf;
 import com.mojang.math.Axis;
 import net.minecraft.world.item.ItemDisplayContext;
@@ -92,6 +94,7 @@ import net.minecraft.client.renderer.RenderType;
 import com.akicater.blocks.LayingItemEntity;
 
 public abstract class #if MC_VER >= V1_21_9 LayingItemBER_abstract_common implements BlockEntityRenderer<LayingItemEntity, LayingItemBERS> #else LayingItemBER_abstract_common implements BlockEntityRenderer<LayingItemEntity> #endif {
+    #if MC_VER >= V1_21_9 ItemModelResolver itemModelResolver; #endif
     public LayingItemBER_abstract_common(BlockEntityRendererProvider.Context context) {
         #if MC_VER >= V1_21_9 this.itemModelResolver = context.itemModelResolver(); #endif
 
@@ -102,7 +105,15 @@ public abstract class #if MC_VER >= V1_21_9 LayingItemBER_abstract_common implem
         #endif
     }
 
+    static float randomFloat(long seed) {
+        seed ^= seed >>> 30;
+        seed *= 0xbf58476d1ce4e5b9L;
+        seed ^= seed >>> 27;
+        seed *= 0x94d049bb133111ebL;
+        seed ^= seed >>> 31;
 
+        return (seed >>> 40) * 0x1.0p-24f;
+    }
 
     #if MC_VER >= V1_19_4
     public static List<Quaternionf> rot = new ArrayList<>(
@@ -137,7 +148,6 @@ public abstract class #if MC_VER >= V1_21_9 LayingItemBER_abstract_common implem
     #endif
 
     #if MC_VER >= V1_21_9
-    private final ItemModelResolver itemModelResolver;
 
 
     @Override
@@ -244,40 +254,40 @@ public abstract class #if MC_VER >= V1_21_9 LayingItemBER_abstract_common implem
 
     void mul(PoseStack poseStack, List<#if MC_VER >= V1_19_4 Quaternionf #else Quaternion #endif> transforms, #if MC_VER >= V1_19_4 Quaternionf #else Quaternion #endif quaternion) {
         transforms.add(quaternion);
-        poseStack.mulPose(transforms.get(transforms.size() - 1));
+        poseStack.#if MC_VER < V26_3 mulPose #else rotate #endif(transforms.get(transforms.size() - 1));
     }
 
     void mul(PoseStack poseStack, List<#if MC_VER >= V1_19_4 Quaternionf #else Quaternion #endif> transforms, int index, float degrees) {
         switch (index) {
             case -3: {
                 transforms.add(#if MC_VER >= V1_19_4 Axis #else Vector3f #endif .ZN.rotationDegrees(degrees));
-                poseStack.mulPose(transforms.get(transforms.size() - 1));
+                poseStack.#if MC_VER < V26_3 mulPose #else rotate #endif(transforms.get(transforms.size() - 1));
                 break;
             }
             case -2: {
                 transforms.add(#if MC_VER >= V1_19_4 Axis #else Vector3f #endif .YN.rotationDegrees(degrees));
-                poseStack.mulPose(transforms.get(transforms.size() - 1));
+                poseStack.#if MC_VER < V26_3 mulPose #else rotate #endif(transforms.get(transforms.size() - 1));
 
                 break;
             }
             case -1: {
                 transforms.add(#if MC_VER >= V1_19_4 Axis #else Vector3f #endif .XN.rotationDegrees(degrees));
-                poseStack.mulPose(transforms.get(transforms.size() - 1));
+                poseStack.#if MC_VER < V26_3 mulPose #else rotate #endif(transforms.get(transforms.size() - 1));
                 break;
             }
             case 1: {
                 transforms.add(#if MC_VER >= V1_19_4 Axis #else Vector3f #endif .XP.rotationDegrees(degrees));
-                poseStack.mulPose(transforms.get(transforms.size() - 1));
+                poseStack.#if MC_VER < V26_3 mulPose #else rotate #endif(transforms.get(transforms.size() - 1));
                 break;
             }
             case 2: {
                 transforms.add(#if MC_VER >= V1_19_4 Axis #else Vector3f #endif .YP.rotationDegrees(degrees));
-                poseStack.mulPose(transforms.get(transforms.size() - 1));
+                poseStack.#if MC_VER < V26_3 mulPose #else rotate #endif(transforms.get(transforms.size() - 1));
                 break;
             }
             case 3: {
                 transforms.add(#if MC_VER >= V1_19_4 Axis #else Vector3f #endif .ZP.rotationDegrees(degrees));
-                poseStack.mulPose(transforms.get(transforms.size() - 1));
+                poseStack.#if MC_VER < V26_3 mulPose #else rotate #endif(transforms.get(transforms.size() - 1));
                 break;
             }
         }
@@ -306,7 +316,7 @@ public abstract class #if MC_VER >= V1_21_9 LayingItemBER_abstract_common implem
             poseStack.translate(-0.25, -0.25, -0.25);
         } else {
             poseStack.translate(0.5, 0.5, 0.5);
-            poseStack.mulPose(rot.get(slot));
+            poseStack.#if MC_VER < V26_3 mulPose #else rotate #endif(rot.get(slot));
             poseStack.translate(-0.5, -0.5, -0.5);
 
             if (quad) {
@@ -315,10 +325,12 @@ public abstract class #if MC_VER >= V1_21_9 LayingItemBER_abstract_common implem
                 poseStack.translate(pos1.x, pos1.y, 0.03125 * size - 0.0001 - margin);
             }
 
-            poseStack.mulPose(#if MC_VER >= V1_19_4 Axis #else Vector3f #endif .ZP.rotationDegrees(degrees));
-            poseStack.mulPose(#if MC_VER >= V1_19_4 Axis #else Vector3f #endif .ZP.rotationDegrees(180));
+            poseStack.#if MC_VER < V26_3 mulPose #else rotate #endif(#if MC_VER >= V1_19_4 Axis #else Vector3f #endif .ZP.rotationDegrees(degrees));
+            poseStack.#if MC_VER < V26_3 mulPose #else rotate #endif(#if MC_VER >= V1_19_4 Axis #else Vector3f #endif .ZP.rotationDegrees(180));
         }
 
+        float random = randomFloat(entity.blockPos.asLong()) / 100;
+        poseStack.translate(random, random, random);
 
         entity.lastRot.set(x, degrees);
 

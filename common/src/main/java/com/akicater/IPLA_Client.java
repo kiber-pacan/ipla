@@ -56,14 +56,14 @@ public class IPLA_Client {
 
         PLACE_ITEM_KEY = new KeyMapping(
                 "key.ipla.place_item_key",
-                InputConstants.Type.KEYSYM,
+                InputConstants.Type. #if MC_VER < V26_3 KEYSYM #else KEYBOARD #endif,
                 InputConstants.KEY_V,
                 #if MC_VER >= V1_21_9 category #else "key.categories.ipla" #endif
         );
 
         ROTATE_ITEM_KEY = new KeyMapping(
                 "key.ipla.rotate_item_key",
-                InputConstants.Type.KEYSYM,
+                InputConstants.Type. #if MC_VER < V26_3 KEYSYM #else KEYBOARD #endif,
                 InputConstants.KEY_LALT,
                 #if MC_VER >= V1_21_9 category #else "key.categories.ipla" #endif
         );

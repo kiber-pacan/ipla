@@ -42,7 +42,7 @@ import java.util.List;
 
 
 public class LayingItem extends BaseEntityBlock implements SimpleWaterloggedBlock {
-    #if MC_VER > V1_20_1 public static final MapCodec<LayingItem> CODEC = simpleCodec(LayingItem::new); #endif
+    #if MC_VER > V1_20_1 && MC_VER < V26_3 public static final MapCodec<LayingItem> CODEC = simpleCodec(LayingItem::new); #endif
     public static BooleanProperty WATERLOGGED = BooleanProperty.create("waterlogged");
     public static IntegerProperty LIGHT = IntegerProperty.create("light", 0, 16);
 
@@ -105,7 +105,7 @@ public class LayingItem extends BaseEntityBlock implements SimpleWaterloggedBloc
         return new LayingItemEntity(pos, state);
     }
 
-    #if MC_VER > V1_20_1
+    #if MC_VER > V1_20_1 && MC_VER < V26_3
     @Override
     protected @NotNull MapCodec<? extends BaseEntityBlock> codec() {
         return CODEC;
@@ -113,7 +113,7 @@ public class LayingItem extends BaseEntityBlock implements SimpleWaterloggedBloc
     #endif
 
     @Override
-    protected void spawnDestroyParticles(Level level, Player player, BlockPos pos, BlockState state) {}
+    #if MC_VER < V26_3 protected #else public #endif void spawnDestroyParticles(Level level, #if MC_VER < V26_3 Player player, #endif BlockPos pos, BlockState state) {}
 
 
     // Get voxel shape of placed items

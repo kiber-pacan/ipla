@@ -122,7 +122,7 @@ public final class IPLA {
                         .noTerrainParticles()
                         #endif
                         .isSuffocating((state, level, pos) -> false)
-                        .isViewBlocking((state, level, pos) -> false)
+                        .isViewBlocking((state, level, pos #if MC_VER >= V26_3 , aabb #endif) -> false)
                         .isRedstoneConductor((state, level, pos) -> false)
                         #if MC_VER >= V1_21_3
                         .setId(key)

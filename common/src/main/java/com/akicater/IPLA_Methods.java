@@ -197,7 +197,7 @@ public class IPLA_Methods {
                 || block instanceof WallBlock
                 || block instanceof DoorBlock
                 || block instanceof BedBlock
-                || block instanceof RedStoneWireBlock
+                || block instanceof #if MC_VER < V26_3 RedStoneWireBlock #else RedstoneWireBlock #endif
                 || block instanceof LadderBlock
                 || block instanceof TripWireHookBlock
                 || block instanceof VineBlock
