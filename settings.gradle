@@ -80,7 +80,6 @@ gradle.ext.set("minecraft_version", minecraft_version)
 
 println("version: ${minecraft_version}, index: ${version_index}")
 
-
 write_gradle_predefine(minecraft_versions, version_index)
 
 
@@ -122,6 +121,7 @@ String FABRIC_API_VERSION_LINK = "https://maven.fabricmc.net/net/fabricmc/fabric
 String FORGE_VERSION_LINK = "https://maven.minecraftforge.net/net/minecraftforge/forge/maven-metadata.xml"
 String NEOFORGE_VERSION_LINK = "https://maven.neoforged.net/releases/net/neoforged/neoforge/maven-metadata.xml"
 String PARCHMENT_BASE = "https://ldtteam.jfrog.io/artifactory/api/storage/parchmentmc-public/org/parchmentmc/data/"
+String MANIFOLD_LINK = "https://repo.maven.apache.org/maven2/systems/manifold/manifold-all/maven-metadata.xml"
 
 static List<String> parse_xml_versioning(String link) {
     return new XmlSlurper().parseText(URI.create(link).toURL()
@@ -129,104 +129,107 @@ static List<String> parse_xml_versioning(String link) {
 
 }
 
+// Only fabric and forge
 def get_version = { String link ->
-    return parse_xml_versioning(link).reverse().find {
-        api -> (api as String).equals(minecraft_version)
+    return parse_xml_versioning(link).reverse().find { api ->
+        def splitted = (api as String).split('\\+')
+        return splitted.size() == 2 && splitted[1].equals(minecraft_version)
     }
 }
 
-def get_mod_version = {
-    String modid -> {
-        var versions =
-                new JsonSlurper().parseText(URI.create("https://api.modrinth.com/v2/project/${modid}/version").toURL().getText())
+def get_version_neoforge = { String link ->
+    return parse_xml_versioning(link).reverse().find { String api ->
+        def stripped_mc = (version_index >= 18 ? minecraft_version : minecraft_version.substring(2)) + (minecraft_version.count(".") < 2 ? ".0" : "")
 
-        return versions.find {version -> {
-            version["game_versions"].contains(minecraft_version)
-        }}["version_number"]
+        def stripped_version = api.substring(0, api.lastIndexOf("."))
+
+        //print stripped_mc + " "
+        //println stripped_version + " " + String.valueOf(stripped_version == stripped_mc)
+
+        return stripped_mc == stripped_version
     }
+}
+
+def get_version_latest = { String link ->
+    return parse_xml_versioning(link).reverse()[0]
+}
+
+def get_mod_version = { String modid ->
+    var versions =
+            new JsonSlurper().parseText(URI.create("https://api.modrinth.com/v2/project/${modid}/version").toURL().getText())
+
+    return versions.find {version ->
+        version["game_versions"].contains(minecraft_version)
+    }["version_number"]
 }
 
 // [fabric_version, fabric_version_name,
 //  neoforge_version, neoforge_version_name,
 //  forge_version, forge_version_name,
 //  base_version_name]
-def get_loader_dependent = {
-    String modid -> {
-        var versions =
-                new JsonSlurper().parseText(URI.create("https://api.modrinth.com/v2/project/${modid}/version").toURL().getText())
+def get_loader_dependent = { String modid ->
+    var versions =
+            new JsonSlurper().parseText(URI.create("https://api.modrinth.com/v2/project/${modid}/version").toURL().getText())
 
-        List<String> versions_loader_dependent = new ArrayList<>()
+    List<String> versions_loader_dependent = new ArrayList<>()
 
-        List<String> loaders = ["fabric", "neoforge", "forge"]
+    List<String> loaders = ["fabric", "neoforge", "forge"]
 
-        for (var loader : loaders) {
-            var version_object = versions.find {version -> {
-                version["game_versions"].contains(minecraft_version) && version["loaders"].contains(loader)
-            }}
-
-            versions_loader_dependent.add(modid.replace("-", "_") + "_version_" + loader)
-            versions_loader_dependent.add((version_object != null) ? version_object["version_number"] as String : "")
+    for (var loader : loaders) {
+        var version_object = versions.find {version ->
+            version["game_versions"].contains(minecraft_version) && version["loaders"].contains(loader)
         }
-        String base = modid.replace("-", "_") + "_version"
 
-        versions_loader_dependent.add(base)
-        gradle.ext.get("loader_dependent").add(base)
-
-        return versions_loader_dependent
+        versions_loader_dependent.add(modid.replace("-", "_") + "_version_" + loader)
+        versions_loader_dependent.add((version_object != null) ? version_object["version_number"] as String : "")
     }
+    String base = modid.replace("-", "_") + "_version"
+
+    versions_loader_dependent.add(base)
+    gradle.ext.get("loader_dependent").add(base)
+
+    return versions_loader_dependent
 }
 
-def add_loader_dependent = {
-    String modid -> {
-        List<String> versions = get_loader_dependent(modid)
+def add_loader_dependent = { String modid ->
+    List<String> versions = get_loader_dependent(modid)
 
-        gradle.ext.set(versions[0], versions[1]) //modid_fabric = ver
-        gradle.ext.set(versions[2], versions[3]) //modid_neoforge = ver
-        gradle.ext.set(versions[4], versions[5]) //modid_forge = ver]
-        //modid_versions = [fabric_ver, neoforge_ver, forge_ver]
-        gradle.ext.set(versions[6] + "s", versions)
+    gradle.ext.set(versions[0], versions[1]) //modid_fabric = ver
+    gradle.ext.set(versions[2], versions[3]) //modid_neoforge = ver
+    gradle.ext.set(versions[4], versions[5]) //modid_forge = ver]
+    //modid_versions = [fabric_ver, neoforge_ver, forge_ver]
+    gradle.ext.set(versions[6] + "s", versions)
 
-        gradle.ext.get("loader_dependent").add(versions[6])
-    }
+    gradle.ext.get("loader_dependent").add(versions[6])
 }
 
-def add_loader_independent = {
-    String modid -> {
-        String version = modid.replace("-", "_") + "_version"
+def add_loader_independent = { String modid ->
+    String version = modid.replace("-", "_") + "_version"
 
-        gradle.ext.set(version, get_mod_version(modid))
-        gradle.ext.get("loader_independent").add(version)
-    }
+    gradle.ext.set(version, get_mod_version(modid))
+    gradle.ext.get("loader_independent").add(version)
 }
 // endregion
 
 // region LOADERS
 // === FABRIC START ===
-var fabric_loader_version
-        = new JsonSlurper().parseText(URI.create(FABRIC_LOADER_VERSION_LINK).toURL()
-        .getText())[0]["version"]
+gradle.ext.set("fabric_loader_version", new JsonSlurper().parseText(URI.create(FABRIC_LOADER_VERSION_LINK).toURL()
+        .getText())[0]["version"])
 
-println get_version(FABRIC_API_VERSION_LINK)
-String fabric_api_version = get_version(FABRIC_API_VERSION_LINK)
+gradle.ext.set("fabric_api_version", get_version(FABRIC_API_VERSION_LINK))
 // === FABRIC END ===
 
 
 // === NEOFORGE START ===
-println get_version(NEOFORGE_VERSION_LINK)
-String neoforge_version = get_version(NEOFORGE_VERSION_LINK)
+gradle.ext.set("neoforge_version", get_version_neoforge(NEOFORGE_VERSION_LINK))
 // === NEOFORGE END ===
 
 
 // === FORGE START ===
-String forge_version = (version_index < 18) ? parse_xml_versioning(FORGE_VERSION_LINK).reverse().find {
+gradle.ext.set("forge_version", (version_index < 18) ? parse_xml_versioning(FORGE_VERSION_LINK).reverse().find {
     api -> (api as String).contains(minecraft_version)
-} : "fuck you"
+} : "fuck you")
 // === FORGE END ===
-
-gradle.ext.fabric_loader_version = fabric_loader_version
-gradle.ext.fabric_api_version = fabric_api_version
-gradle.ext.neoforge_version = neoforge_version
-gradle.ext.forge_version = forge_version
 // endregion
 
 // region === PARCHMENT ===
@@ -258,20 +261,19 @@ if (parchemnt_acceptable.contains(minecraft_version)) {
 // endregion
 
 // region === MODRINTH ===
-
-
 def loader_independent = ["modmenu"]
 gradle.ext.set("loader_independent", [])
 
-
 for (String modid : loader_independent) add_loader_independent(modid)
-
-
 
 def loader_dependent = ["architectury-api", "jade"]
 gradle.ext.set("loader_dependent", [])
 
 for (String modid : loader_dependent) add_loader_dependent(modid)
 // endregion
+
+// region === MANIFOLD ===
+gradle.ext.set("manifold_version", get_version_latest(MANIFOLD_LINK))
+// endregion === MANIFOLD ===
 
 // endregion
