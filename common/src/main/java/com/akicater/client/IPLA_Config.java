@@ -52,6 +52,7 @@ public class IPLA_Config {
         Path c = cp.resolve("ipla_config.toml");
 
         if (Files.exists(c)) {
+            System.out.println("EXIST");
             CommentedFileConfig fileConfig = CommentedFileConfig.builder(c)
                     .concurrent()
                     .build();
@@ -63,13 +64,13 @@ public class IPLA_Config {
             Optional<Integer> rotPower = fileConfig.getOptional("rotPower");
 
             // Size
-            Optional<Float> absSize = fileConfig.getOptional("absSize");
-            Optional<Float> iSize = fileConfig.getOptional("iSize");
-            Optional<Float> bSize = fileConfig.getOptional("bSize");
+            Optional<Double> absSize = fileConfig.getOptional("absSize");
+            Optional<Double> iSize = fileConfig.getOptional("iSize");
+            Optional<Double> bSize = fileConfig.getOptional("bSize");
 
             // Resize
-            Optional<Float> itemScale = fileConfig.getOptional("itemScale");
-            Optional<Float> blockScale = fileConfig.getOptional("blockScale");
+            Optional<Double> itemScale = fileConfig.getOptional("itemScale");
+            Optional<Double> blockScale = fileConfig.getOptional("blockScale");
 
             // Functions
             Optional<Boolean> oldRendering = fileConfig.getOptional("oldRendering");
@@ -77,53 +78,60 @@ public class IPLA_Config {
 
             boolean broken = false;
 
-            try {
-                this.absoluteSize = absSize.orElse(1.0f);
-            } catch (Exception e) {
+            if (absSize.isPresent()) {
+                this.absoluteSize = absSize.get().floatValue();
+            } else {
                 this.absoluteSize = 1.0f;
                 broken = true;
+                System.out.println("BROKEM absSize");
             }
 
-            try {
-                this.itemSize = iSize.orElse(1.0f);
-            } catch (Exception e) {
+            if (iSize.isPresent()) {
+                this.itemSize = iSize.get().floatValue();
+            } else {
                 this.itemSize = 1.0f;
                 broken = true;
+                System.out.println("BROKEM iSize");
             }
 
-            try {
-                this.blockSize = bSize.orElse(1.0f);
-            } catch (Exception e) {
+            if (bSize.isPresent()) {
+                this.blockSize = bSize.get().floatValue();
+            } else {
                 this.blockSize = 1.0f;
                 broken = true;
+                System.out.println("BROKEM bSize");
             }
 
-            try {
-                this.rotationPower = rotPower.orElse(1);
-            } catch (Exception e) {
+            if (rotPower.isPresent()) {
+                this.rotationPower = rotPower.get();
+            } else {
                 this.baseDegrees = 0;
                 broken = true;
+                System.out.println("BROKEM rotPower");
             }
 
-            try {
-                this.blockScale = blockScale.orElse(2.0f);
-            } catch (Exception e) {
+            if (blockScale.isPresent()) {
+                this.blockScale = blockScale.get().floatValue();
+            } else {
                 this.blockScale = 2.0f;
                 broken = true;
+                System.out.println("BROKEM blockScale");
             }
 
-            try {
-                this.itemScale = itemScale.orElse(2.0f);
-            } catch (Exception e) {
+            if (itemScale.isPresent()) {
+                this.itemScale = itemScale.get().floatValue();
+            } else {
                 this.itemScale = 2.0f;
                 broken = true;
+                System.out.println("BROKEM itemScale");
             }
 
-            try {
-                this.eatFood = eatFood.orElse(false);
-            } catch (Exception e) {
+            if (eatFood.isPresent()) {
+                this.eatFood = eatFood.get();
+            } else {
                 this.eatFood = false;
                 broken = true;
+                System.out.println("BROKEM eatFood");
             }
 
             if (broken) {
