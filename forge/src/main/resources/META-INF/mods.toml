@@ -30,14 +30,7 @@ side = "BOTH"
 [[dependencies."${modid}"]]
 modId = "architectury"
 mandatory = true
-versionRange = "[${architectury_api_version_forge},)"
-ordering = "AFTER"
-side = "BOTH"
-
-[[dependencies."${modid}"]]
-modId = "jade"
-mandatory = true
-versionRange = "[${jade_version_forge},)"
+versionRange = "[${architectury_api_version},)"
 ordering = "AFTER"
 side = "BOTH"
 
