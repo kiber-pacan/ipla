@@ -1,5 +1,6 @@
 package com.akicater;
 
+import com.akicater.abs.Resource;
 import com.akicater.blocks.LayingItem;
 import com.akicater.blocks.LayingItemEntity;
 import com.akicater.network.ItemEatPayload;
@@ -54,7 +55,6 @@ import net.minecraft.world.level.material.Material;
 
 #if MC_VER >= V1_21_11
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.resources.Identifier;
 #else
 #if MC_VER >= V1_21
 import net.minecraft.core.component.DataComponents;
@@ -109,10 +109,10 @@ public final class IPLA {
     public static Map<Block, Integer> shapeTypeCache = new HashMap<>();
 
     public static void initializeServer() {
-        #if MC_VER >= V1_21_3 ResourceKey<Block> key = ResourceKey.create(Registries.BLOCK, #if MC_VER >= V1_21 #if MC_VER >= V1_21_11 Identifier #else ResourceLocation #endif.fromNamespaceAndPath #else new ResourceLocation #endif(IPLA.MOD_ID, "l_item")); #endif
+        #if MC_VER >= V1_21_3 ResourceKey<Block> key = ResourceKey.create(Registries.BLOCK, Resource.fromNamespaceAndPath(IPLA.MOD_ID, "l_item")); #endif
 
         lItemBlock = blocks.register(
-                #if MC_VER >= V1_21 #if MC_VER >= V1_21_11 Identifier #else ResourceLocation #endif .fromNamespaceAndPath #else new ResourceLocation #endif(MOD_ID, "l_item"),
+                Resource.fromNamespaceAndPath(MOD_ID, "l_item"),
                 () -> new LayingItem(BlockBehaviour.Properties.of(#if MC_VER < V1_20_1 Material.SAND #endif)
                         .instabreak()
                         .dynamicShape()
@@ -131,7 +131,7 @@ public final class IPLA {
         );
         #if MC_VER < V1_21_3
         lItemBlockEntity = blockEntities.register(
-                #if MC_VER >= V1_21 ResourceLocation.fromNamespaceAndPath #else new ResourceLocation #endif(MOD_ID, "l_item_entity"),
+                Resource.fromNamespaceAndPath(MOD_ID, "l_item_entity"),
                 () -> BlockEntityType.Builder.of(LayingItemEntity::new, lItemBlock.get()).build(null)
         );
         #endif
@@ -149,9 +149,9 @@ public final class IPLA {
                 ItemEatPayload.receive(context.getPlayer(), buf.ipla$isEatingIpla())
         );
         #else
-        ITEM_PLACE = new ResourceLocation(MOD_ID, "place_item");
-        ITEM_ROTATE = new ResourceLocation(MOD_ID, "rotate_item");
-        ITEM_EAT = new ResourceLocation(MOD_ID, "eat_item");
+        ITEM_PLACE = Resource.fromNamespaceAndPath(MOD_ID, "place_item");
+        ITEM_ROTATE = Resource.fromNamespaceAndPath(MOD_ID, "rotate_item");
+        ITEM_EAT = Resource.fromNamespaceAndPath(MOD_ID, "eat_item");
 
         NetworkManager.registerReceiver(NetworkManager.Side.C2S, ITEM_PLACE, (buf, context) -> ItemPlacePayload.receive(context.getPlayer(), buf.readBlockPos(), buf.readBlockHitResult()));
 

@@ -141,6 +141,9 @@ subprojects {
             add_loader_independent_property(mod)
         }
 
+        // Dirty hack
+        String architectury_api_version = project.architectury_api_version_fabric
+        replaceProperties.put("architectury_api_version", architectury_api_version.substring(0, architectury_api_version.lastIndexOf("+")))
 
         if (rootProject.hasProperty("forge_version")) {
             replaceProperties.put("forge_loader_version", project.forge_version)
@@ -213,7 +216,7 @@ subprojects {
                 }
                 apiToken = token ?: ""
 
-                def uploadFile = (Integer.valueOf(index) < 18) ? tasks.named("remapJar") : tasks.named("shadowJar")
+                def uploadFile = (Integer.valueOf(version_index) < 18) ? tasks.named("remapJar") : tasks.named("shadowJar")
                 def mainFile = upload("1124962", uploadFile)
 
                 mainFile.displayName = archives_name + " " + mod_version

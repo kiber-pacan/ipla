@@ -1,5 +1,6 @@
 package com.akicater;
 
+import com.akicater.abs.Resource;
 import com.akicater.blocks.LayingItem;
 import com.akicater.client.IPLA_Config;
 import com.akicater.network.ItemEatPayload;
@@ -50,7 +51,7 @@ public class IPLA_Client {
     public static IPLA_Config config = new IPLA_Config();
 
     public static void initializeClient() {
-        #if MC_VER >= V1_21_9 KeyMapping.Category category = KeyMapping.Category.register(#if MC_VER >= V1_21_11 Identifier #else ResourceLocation #endif.fromNamespaceAndPath(IPLA.MOD_ID, "ipla")); #endif
+        #if MC_VER >= V1_21_9 KeyMapping.Category category = KeyMapping.Category.register(Resource.fromNamespaceAndPath(IPLA.MOD_ID, "ipla")); #endif
         KeyMapping PLACE_ITEM_KEY;
         KeyMapping ROTATE_ITEM_KEY;
 
@@ -107,7 +108,7 @@ public class IPLA_Client {
             BlockHitResult hitResult = IPLA_Methods.getBlockHitResult(minecraft.hitResult);
             if (hitResult != null && ROTATE_ITEM_KEY.isDown()) {
                 if (minecraft.level != null && minecraft.level.getBlockState(hitResult.getBlockPos()).getBlock() instanceof LayingItem) {
-                    float rotationDegrees = config.getRotationDegrees();
+                    float rotationDegrees = (float) config.getRotationDegrees();
 
                     #if MC_VER < V1_21
                     FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
@@ -120,7 +121,7 @@ public class IPLA_Client {
 
                     #else
                     ItemRotatePayload payload = new ItemRotatePayload(
-                            (int) y,
+                            (int) Math.copySign(Math.ceil(Math.abs(y)), y) ,
                             rotationDegrees,
                             hitResult
                     );
@@ -140,11 +141,11 @@ public class IPLA_Client {
 
         // CONFIG LOADING
         ClientLifecycleEvent.CLIENT_STARTED.register((minecraft) -> {
-            try {
+            /*try {
                 config.loadConfig();
             } catch (IOException e) {
                 throw new RuntimeException(e);
-            }
+            }*/
 
             #if LOADER == COMMON LOGGER.info("IPLA loader mode: COMMON"); #endif
             #if LOADER == FABRIC LOGGER.info("IPLA loader mode: FABRIC"); #endif
@@ -153,7 +154,7 @@ public class IPLA_Client {
         });
 
         ClientLifecycleEvent.CLIENT_STOPPING.register((minecraft) -> {
-            config.saveConfig();
+            //config.saveConfig();
         });
 
         ClientRawInputEvent.MOUSE_CLICKED_POST.register(#if MC_VER <= V1_21_8 (Minecraft client, int button, int action, int mods) #else (client, buttonInfo, action) #endif -> {

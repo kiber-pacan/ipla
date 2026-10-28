@@ -52,6 +52,7 @@ public #if MC_VER >= V1_21 record #else class #endif ItemRotatePayload #if MC_VE
         Level level = player #if MC_VER < V1_20_1 .level #else .level() #endif;
         LayingItemEntity entity;
 
+
         if ((entity = (LayingItemEntity) level.getChunk(hitResult.getBlockPos()).getBlockEntity(hitResult.getBlockPos())) != null) {
             List<Integer> slots = IPLA_Methods.getPreciseIndexFromHit(entity, hitResult);
             for (int rawSlot : slots) {

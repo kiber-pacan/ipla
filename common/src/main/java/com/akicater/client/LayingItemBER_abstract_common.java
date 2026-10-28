@@ -105,16 +105,6 @@ public abstract class #if MC_VER >= V1_21_9 LayingItemBER_abstract_common implem
         #endif
     }
 
-    static float randomFloat(long seed) {
-        seed ^= seed >>> 30;
-        seed *= 0xbf58476d1ce4e5b9L;
-        seed ^= seed >>> 27;
-        seed *= 0x94d049bb133111ebL;
-        seed ^= seed >>> 31;
-
-        return (seed >>> 40) * 0x1.0p-24f;
-    }
-
     #if MC_VER >= V1_19_4
     public static List<Quaternionf> rot = new ArrayList<>(
             List.of(
@@ -329,8 +319,8 @@ public abstract class #if MC_VER >= V1_21_9 LayingItemBER_abstract_common implem
             poseStack.#if MC_VER < V26_3 mulPose #else rotate #endif(#if MC_VER >= V1_19_4 Axis #else Vector3f #endif .ZP.rotationDegrees(180));
         }
 
-        float random = randomFloat(entity.blockPos.asLong()) / 100;
-        poseStack.translate(random, random, random);
+        float offset = (slot * 4 + i) / 100000.0f;
+        poseStack.translate(offset, offset, offset);
 
         entity.lastRot.set(x, degrees);
 
