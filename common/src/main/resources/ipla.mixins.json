@@ -7,8 +7,7 @@
 
   ],
   "mixins": [
-    "PlayerMixin",
-    "ConfigMixin"
+    "PlayerMixin"
   ],
   "injectors": {
     "defaultRequire": 1
