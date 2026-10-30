@@ -141,11 +141,11 @@ public class IPLA_Client {
 
         // CONFIG LOADING
         ClientLifecycleEvent.CLIENT_STARTED.register((minecraft) -> {
-            /*try {
+            try {
                 config.loadConfig();
             } catch (IOException e) {
                 throw new RuntimeException(e);
-            }*/
+            }
 
             #if LOADER == COMMON LOGGER.info("IPLA loader mode: COMMON"); #endif
             #if LOADER == FABRIC LOGGER.info("IPLA loader mode: FABRIC"); #endif
@@ -154,7 +154,7 @@ public class IPLA_Client {
         });
 
         ClientLifecycleEvent.CLIENT_STOPPING.register((minecraft) -> {
-            //config.saveConfig();
+            config.saveConfig();
         });
 
         ClientRawInputEvent.MOUSE_CLICKED_POST.register(#if MC_VER <= V1_21_8 (Minecraft client, int button, int action, int mods) #else (client, buttonInfo, action) #endif -> {

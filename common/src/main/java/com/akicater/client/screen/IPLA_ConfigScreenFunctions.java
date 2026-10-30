@@ -32,8 +32,12 @@ import static com.akicater.IPLA_Client.config;
 
 #if MC_VER >= V1_19_2
 import net.minecraft.network.chat.Component;
+
+import java.util.function.Consumer;
 #else
 import net.minecraft.network.chat.TextComponent;
+
+import java.util.function.Consumer;
 #endif
 
 public class IPLA_ConfigScreenFunctions extends Screen {
@@ -42,7 +46,7 @@ public class IPLA_ConfigScreenFunctions extends Screen {
     private static final #if MC_VER >= V1_19_2 Component #else TextComponent #endif TITLE = #if MC_VER >= V1_19_2 Component.literal #else new TextComponent #endif ("IPLA config");
 
 
-    private boolean oldRendering;
+    //private boolean oldRendering;
     private boolean eatFood;
 
     public IPLA_ConfigScreenFunctions(Screen parent) {
@@ -50,8 +54,8 @@ public class IPLA_ConfigScreenFunctions extends Screen {
 
         this.parent = parent;
 
-        this.oldRendering = config.oldRendering;
-        this.eatFood = config.eatFood;
+        //this.oldRendering = config.oldRendering;
+        //this.eatFood = config.eatFood;
     }
 
     #if MC_VER < V26_1
@@ -63,6 +67,47 @@ public class IPLA_ConfigScreenFunctions extends Screen {
         super.render(x1, mouseX, mouseY, delta);
     }
     #endif
+
+    void addCheckbox(int x, int y, int width, int height, String text, Consumer<Boolean> setter) {
+        #if MC_VER >= V1_20_4
+        /*this.addRenderableWidget(Checkbox.builder(Component.literal("Old rendering"), this.font)
+                #if MC_VER >= V1_21 .maxWidth(width) #endif
+                .selected(oldRendering)
+                .onValueChange((cb, state) -> {
+                    oldRendering = state;
+                    config.saveConfig();
+                })
+                .pos(x, y)
+                .build());*/
+        #else
+        this.addRenderableWidget(new Checkbox(x, y, width, height,
+                #if MC_VER >= V1_19_2 Component.literal #else new TextComponent #endif (text), true) {
+            @Override
+            public void onPress() {
+                super.onPress();
+                setter.accept(this.selected());
+                //config.oldRendering = oldRendering;
+            }
+        });
+        #endif
+    }
+
+    void addButton(int x, int y, int width, int height, String text, Consumer<Button> setter) {
+        #if MC_VER >= V1_19_4
+        this.addRenderableWidget(
+                Button.builder(
+                                #if MC_VER >= V1_19_2 Component.literal #else new TextComponent #endif (text),
+                                b -> reload()
+                        )
+                        .bounds(x, y, width, height)
+                        .build()
+        );
+        #else
+        this.addRenderableWidget(new Button(x, y, width, height, #if MC_VER >= V1_19_2 Component.literal #else new TextComponent #endif (text), b -> {
+            reload();
+        }));
+        #endif
+    }
 
     @Override
     protected void init() {
@@ -76,53 +121,15 @@ public class IPLA_ConfigScreenFunctions extends Screen {
 
 
         // Old rendering checkbox
-        #if MC_VER >= V1_20_4
-        this.addRenderableWidget(Checkbox.builder(Component.literal("Old rendering"), this.font)
-                #if MC_VER >= V1_21 .maxWidth(width) #endif
-                .selected(oldRendering)
-                .onValueChange((cb, state) -> {
-                    oldRendering = state;
-                    config.saveConfig();
-                })
-                .pos(x, y)
-                .build());
-        #else
-        this.addRenderableWidget(new Checkbox(x, y, widthButton, heightButton,
-                #if MC_VER >= V1_19_2 Component.literal #else new TextComponent #endif ("Old rendering"), oldRendering) {
-            @Override
-            public void onPress() {
-                super.onPress();
-                oldRendering = this.selected();
-                config.oldRendering = oldRendering;
-            }
-        });
-        #endif
+
         y += heightButton + gap;
 
         // Eat food checkbox
-        #if MC_VER >= V1_20_4
-        this.addRenderableWidget(Checkbox.builder(Component.literal("Old rendering"), this.font)
-                #if MC_VER >= V1_21 .maxWidth(width) #endif
-                .selected(eatFood)
-                .onValueChange((cb, state) -> {
-                    eatFood = state;
-                    config.saveConfig();
-                })
-                .pos(x, y)
-                .build());
-        #else
-        this.addRenderableWidget(new Checkbox(x, y, widthButton, heightButton,
-                #if MC_VER >= V1_19_2 Component.literal #else new TextComponent #endif ("Eat food"), eatFood) {
-            @Override
-            public void onPress() {
-                super.onPress();
-                eatFood = this.selected();
-                config.eatFood = eatFood;
-            }
-        });
-        #endif
-        y += (heightButton + gap) * 4;
 
+
+        addCheckbox(x, y, widthButton, heightButton, "Eat food", value -> config.eatFood = value);
+        y += heightButton + gap * 4;
+        addCheckbox(x, y, widthButton, heightButton, "Old rendering", value -> config.oldRendering = value);
         y += heightButton + gap * 4;
 
 
@@ -176,7 +183,7 @@ public class IPLA_ConfigScreenFunctions extends Screen {
         config.defaultFunctionsConfig();
         config.saveConfig();
 
-        this.oldRendering = config.oldRendering;
+        //this.oldRendering = config.oldRendering;
         this.eatFood = config.eatFood;
 
         init();
